@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title data-translate-key="page_title">My Inventory - Krishika</title>
+    <!-- FIX: Removed maximum-scale and user-scalable to solve validation error -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2E7D32"> <!-- Sets the browser/status bar color -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Link to Manifest (Required for "Add to Home Screen") -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #2E7D32; 
+            --primary-dark: #1B5E20;
+            --primary-light: #81c784;
+            --bg-color: #F8F9FA; 
+            --white: #ffffff;
+            --text-main: #1C2e20;
+            --text-light: #607d8b;
+            --shadow-soft: 0 8px 20px rgba(0,0,0,0.06);
+            --transition: 0.25s ease-out;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            height: 100vh; 
+            width: 100vw;
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .app-container { 
+            height: 100%; 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            overflow: hidden; 
+        }
+        
+        .app-main { 
+            flex: 1; 
+            width: 100%;
+            overflow-y: auto; 
+            overflow-x: hidden; 
+            padding: 85px 16px 100px 16px; 
+            scroll-behavior: smooth;
+        }
+        .app-main::-webkit-scrollbar { display: none; }
+
+        /* Header */
+        .app-header {
+            position: absolute; top: 0; left: 0; right: 0; z-index: 50;
+            height: 70px; 
+            width: 100%;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        
+        .header-title { font-size: 18px; font-weight: 700; color: var(--primary-color); }
+        
+        .icon-btn { 
+            width: 40px; height: 40px; border-radius: 12px; border: none; background: var(--bg-color); 
+            color: var(--text-main); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            text-decoration: none; transition: var(--transition);
+        }
+        
+        .user-avatar-btn { 
+            border-radius: 50%; width: 42px; height: 42px;
+            border: 2px solid var(--primary-light); overflow: hidden; padding: 1px;
+        }
+        .user-avatar-btn img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+        /* Flex Container Strictness to prevent sliding */
+        .search-area {
+            position: relative; 
+            width: 100%;
+            margin-bottom: 25px;
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            gap: 10px;
+            z-index: 40;
+        }
+
+        .search-wrapper {
+            flex: 1; 
+            min-width: 0; 
+            background: var(--white); border-radius: 14px;
+            box-shadow: var(--shadow-soft);
+            display: flex; align-items: center; padding: 4px 6px;
+            height: 54px;
+            border: 1px solid transparent;
+            transition: var(--transition);
+        }
+        .search-wrapper:focus-within { border-color: var(--primary-color); }
+        
+        .search-input {
+            border: none; background: transparent; height: 100%; 
+            padding-left: 10px; flex: 1; 
+            min-width: 0; 
+            font-size: 15px; color: var(--text-main); outline: none;
+        }
+        .search-action-btn {
+            width: 40px; height: 40px; border: none; background: transparent; color: var(--text-light);
+            cursor: pointer; border-radius: 10px; font-size: 18px; 
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        /* Mic Active Animation */
+        .mic-active { 
+            color: #d32f2f !important; 
+            background-color: #ffebee !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        .filter-container { 
+            position: relative; 
+            flex-shrink: 0; 
+        }
+        
+        .filter-btn {
+            width: 54px; height: 54px; 
+            background: var(--primary-color); 
+            border-radius: 14px; border: none;
+            color: var(--white); font-size: 20px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .filter-btn:active { transform: scale(0.95); }
+
+        .filter-dropdown {
+            position: absolute;
+            top: 60px; right: 0;
+            width: 200px;
+            background: var(--white);
+            border-radius: 14px;
+            padding: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            opacity: 0; transform: translateY(-10px); pointer-events: none;
+            transition: 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+        .filter-dropdown.show {
+            opacity: 1; transform: translateY(0); pointer-events: all;
+        }
+
+        .filter-option {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px; border-radius: 10px;
+            cursor: pointer; color: var(--text-main); font-size: 14px;
+        }
+        .filter-option:hover { background-color: #f5f5f5; }
+        .filter-option input { accent-color: var(--primary-color); transform: scale(1.2); }
+
+        /* Vertical Card Layout */
+        .item-card {
+            background: var(--white); border-radius: 20px;
+            overflow: hidden; 
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-soft);
+            display: flex; flex-direction: column; 
+            animation: fadeIn 0.5s ease;
+            width: 100%;
+        }
+        
+        .item-img-container {
+            width: 100%;
+            height: 200px;
+            background: #f0f0f0;
+            position: relative;
+        }
+        .item-img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .expiry-float {
+            position: absolute; top: 15px; right: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 6px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; color: #D32F2F;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(4px);
+        }
+
+        .item-details { padding: 20px; }
+        
+        .card-header { 
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+            flex-wrap: nowrap;
+        }
+        h3 { font-size: 20px; font-weight: 700; color: var(--text-main); text-transform: capitalize; }
+        
+        .meta-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .meta-pill { 
+            padding: 6px 14px; background: #F5F7F6; border-radius: 8px;
+            font-size: 13px; color: var(--text-main); font-weight: 500;
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        .analysis-box {
+            background: #F1F8F1; 
+            border-left: 4px solid var(--primary-color);
+            border-radius: 10px; padding: 15px; 
+            font-size: 13px; line-height: 1.6; color: #455A64;
+        }
+        .a-title { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--primary-dark); margin-bottom: 4px; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(211, 47, 47, 0); } 100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <a href="/farmer/dashboard" class="icon-btn">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="header-title" data-translate-key="inventory_title">My Inventory</div>
+            <button class="icon-btn user-avatar-btn">
+                {% if user.profile_image %}
+                    <img src="{{ url_for('static', filename='profiles/' + user.profile_image) }}" alt="User">
+                {% else %}
+                    <i class="fa-solid fa-user"></i>
+                {% endif %}
+            </button>
+        </header>
+
+        <div class="app-main">
+            
+            <!-- SEARCH AND FILTER AREA -->
+            <form class="search-area" method="GET" action="/farmer/list" id="search-form">
+                <div class="search-wrapper">
+                    <button type="submit" class="search-action-btn" aria-label="Search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                    
+                    <input type="text" name="search" id="search-input" class="search-input" placeholder="Search crops..." data-translate-placeholder="search_placeholder" value="{{ request.args.get('search', '') }}">
+                    
+                    <!-- Microphone Toggle -->
+                    <button type="button" class="search-action-btn" id="voice-btn" aria-label="Voice Input">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
+
+                <!-- FILTER BUTTON -->
+                <div class="filter-container">
+                    <button type="button" class="filter-btn" id="filter-toggle" aria-label="Filter">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                    
+                    <!-- FILTER DROPDOWN -->
+                    <div class="filter-dropdown" id="filter-menu">
+                        <label class="filter-option">
+                            <input type="radio" name="sort" value="expiry" onchange="document.getElementById('search-form').submit()"> 
+                            <span>Sort by Expiry</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="sort" value="name" onchange="document.getElementById('search-form').submit()"> 
+                            <span>Sort by Name</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="sort" value="newest" onchange="document.getElementById('search-form').submit()"> 
+                            <span>Newest Added</span>
+                        </label>
+                    </div>
+                </div>
+            </form>
+
+            <!-- PRODUCTS LIST -->
+            {% for p in products %}
+            <div class="item-card">
+                <!-- Image Section - Top -->
+                <div class="item-img-container">
+                    <img src="{{ url_for('static', filename='uploads/' + p.image_path) }}" class="item-img" alt="Crop">
+                    <div class="expiry-float">
+                        <i class="fa-regular fa-clock"></i> Exp: {{ p.expiry_prediction }}
+                    </div>
+                </div>
+                
+                <!-- Details Section - Bottom -->
+                <div class="item-details">
+                    <div class="card-header">
+                        <h3>{{ p.name }}</h3>
+                        <div style="font-size:12px; color:var(--text-light);">{{ p.pick_time }}</div>
+                    </div>
+                    
+                    <div class="meta-row">
+                        <div class="meta-pill"><i class="fa-solid fa-leaf" style="color:var(--primary-color);"></i> {{ p.category }}</div>
+                        <div class="meta-pill"><i class="fa-solid fa-temperature-half" style="color:#F57C00;"></i> {{ p.temperature }}°C</div>
+                    </div>
+
+                    <div class="analysis-box">
+                        <div class="a-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Analysis</div>
+                        <p style="margin-bottom:8px;">{{ p.description }}</p>
+                        
+                        <div class="a-title" style="color:#F9A825; margin-top:8px;"><i class="fa-regular fa-lightbulb"></i> Tip</div>
+                        <p>{{ p.tips }}</p>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state" style="text-align:center; padding-top:50px;">
+                <i class="fa-solid fa-basket-shopping" style="font-size:60px; color:#e0e0e0;"></i>
+                <h3 style="margin-top:15px; color:var(--text-light);" data-translate-key="no_items_title">No Items Yet</h3>
+                <p style="font-size:14px; color:#b0bec5;" data-translate-key="no_items_desc">Analyze a crop to add it here.</p>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Working Filter Logic ---
+        const filterBtn = document.getElementById('filter-toggle');
+        const filterMenu = document.getElementById('filter-menu');
+
+        filterBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            filterMenu.classList.toggle('show');
+            const icon = filterBtn.querySelector('i');
+            if (filterMenu.classList.contains('show')) {
+                icon.classList.remove('fa-sliders');
+                icon.classList.add('fa-xmark');
+            } else {
+                icon.classList.remove('fa-xmark');
+                icon.classList.add('fa-sliders');
+            }
+        });
+
+        // Close when clicking anywhere else
+        document.addEventListener('click', (e) => {
+            if (!filterBtn.contains(e.target) && !filterMenu.contains(e.target)) {
+                filterMenu.classList.remove('show');
+                filterBtn.querySelector('i').classList.remove('fa-xmark');
+                filterBtn.querySelector('i').classList.add('fa-sliders');
+            }
+        });
+
+        // --- 2. FIXED Mic Logic (Error handling + Toggle) ---
+        const voiceBtn = document.getElementById('voice-btn');
+        const searchInput = document.getElementById('search-input');
+        const searchForm = document.getElementById('search-form');
+        let isListening = false;
+        let recognition = null;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            // Set Lang
+            const savedLang = localStorage.getItem('farmerLanguage') || 'en';
+            const langMap = { 'en': 'en-US', 'hi': 'hi-IN', 'mr': 'mr-IN', 'gu': 'gu-IN' };
+            recognition.lang = langMap[savedLang] || 'en-US';
+            recognition.continuous = false; 
+
+            // Helper to stop listening UI
+            const stopListeningUI = () => {
+                isListening = false;
+                voiceBtn.classList.remove('mic-active');
+                voiceBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+            };
+
+            recognition.onstart = () => {
+                isListening = true;
+                voiceBtn.classList.add('mic-active');
+                voiceBtn.innerHTML = '<i class="fa-solid fa-stop"></i>'; // Stop icon
+            };
+
+            recognition.onend = () => {
+                stopListeningUI();
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech Recognition Error:", event.error);
+                stopListeningUI(); // Force reset on error
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript;
+                stopListeningUI();
+                setTimeout(() => searchForm.submit(), 600);
+            };
+
+            voiceBtn.addEventListener('click', () => {
+                try {
+                    if (isListening) {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                    }
+                } catch(err) {
+                    console.log("Recognition toggling error", err);
+                    stopListeningUI(); // Reset if logical error occurs
+                }
+            });
+        } else {
+            voiceBtn.style.display = 'none';
+        }
+
+        // --- 3. Preserved Translations Logic ---
+        const translations = {
+            'en': { page_title: 'My Inventory', inventory_title: 'My Inventory', search_placeholder: 'Search crops...', no_items_title: 'No Items Yet', no_items_desc: 'Analyze a crop to add it here.' },
+            'hi': { page_title: 'मेरी इन्वेंटरी', inventory_title: 'मेरी फसलें', search_placeholder: 'फसल खोजें...', no_items_title: 'कोई आइटम नहीं', no_items_desc: 'विश्लेषण करें।' }
+        };
+
+        const translatePage = (lang) => {
+            const t = translations[lang] || translations['en'];
+            document.querySelectorAll('[data-translate-key]').forEach(el => { if(t[el.dataset.translateKey]) el.innerHTML = t[el.dataset.translateKey]; });
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => { if(t[el.dataset.translatePlaceholder]) el.placeholder = t[el.dataset.translatePlaceholder]; });
+        };
+
+        translatePage(localStorage.getItem('farmerLanguage') || 'en');
+    </script>
+</body>
+</html>

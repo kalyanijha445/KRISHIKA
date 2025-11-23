@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title data-translate-key="page_title_video">Krishika - Videos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- Fonts & Icons -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2E7D32"> <!-- Sets the browser/status bar color -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Link to Manifest (Required for "Add to Home Screen") -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            /* Nature-Tech Green Palette */
+            --primary-color: #2E7D32; 
+            --primary-dark: #1B5E20;
+            --primary-light: #81c784;
+            --primary-gradient: linear-gradient(135deg, #43a047, #2e7d32);
+            --accent-color: #FDD835; 
+            
+            --bg-color: #F1F8F1; 
+            --surface-color: #ffffff;
+            --surface-dim: #E8F5E9;
+            
+            --text-main: #1C2e20;
+            --text-light: #607d8b;
+            --white: #ffffff;
+            
+            --shadow-soft: 0 10px 30px rgba(46, 125, 50, 0.08);
+            --shadow-float: 0 15px 35px rgba(0,0,0,0.1);
+            --border-radius: 20px;
+            --transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .app-container { height: 100%; width: 100%; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        
+        /* Main Container */
+        .app-main { 
+            flex: 1; 
+            background: #ffffff; 
+            position: relative;
+            padding: 0; 
+            overflow-y: auto;
+            /* Scroll snap removed from main list view, moved to player overlay */
+        }
+        .app-main::-webkit-scrollbar { display: none; }
+        
+        /* Header */
+        .app-header {
+            position: absolute; top: 0; left: 0; right: 0; z-index: 50;
+            height: 75px; display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(46, 125, 50, 0.05);
+            transition: var(--transition);
+        }
+        
+        .header-title { font-size: 16px; font-weight: 700; letter-spacing: 1.5px; color: var(--primary-color); text-transform: uppercase; }
+        
+        .icon-btn { 
+            width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--white); 
+            color: var(--text-main); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: var(--transition);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .icon-btn:hover { background: var(--surface-dim); color: var(--primary-color); transform: rotate(15deg); }
+        .icon-btn:active { transform: scale(0.95); }
+        
+        .user-avatar-btn { color: var(--primary-color); border: 2px solid var(--white); box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2); overflow: hidden; }
+        .user-avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* VIDEO LIST STYLES (Grid on Main Page) */
+        .video-list-grid {
+            padding: 90px 15px 100px; /* Top padding for header, bottom for nav */
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .list-card {
+            background: #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+            aspect-ratio: 9/13; /* Tall thumbnail ratio */
+        }
+        .list-card:active { transform: scale(0.96); }
+
+        .list-thumb { width: 100%; height: 100%; object-fit: cover; }
+        .play-overlay-icon {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px; background: rgba(0,0,0,0.3); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: white; border: 2px solid rgba(255,255,255,0.8);
+            backdrop-filter: blur(2px);
+        }
+        .list-card-info {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 40px 10px 10px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white;
+        }
+        .list-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* FULL SCREEN PLAYER OVERLAY (Hidden by default) */
+        .video-feed-overlay {
+            position: fixed; inset: 0; z-index: 400; /* Highest priority */
+            background: #000;
+            display: none; /* Active class toggles this */
+            flex-direction: column;
+        }
+        .video-feed-overlay.active { display: flex; }
+
+        .feed-scroll-container {
+            flex: 1;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            height: 100%;
+            -ms-overflow-style: none; /* Hide scrollbar */
+        }
+        .feed-scroll-container::-webkit-scrollbar { display: none; }
+
+        /* Video Card in Feed */
+        .video-card {
+            width: 100%;
+            height: 100%; 
+            position: relative;
+            scroll-snap-align: start;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 9:16 Full Screen Fill */
+        }
+        
+        /* Video Overlay Info */
+        .video-info-overlay {
+            position: absolute;
+            bottom: 30px; /* Lower than before as no nav bar in full screen usually */
+            left: 0;
+            width: 100%;
+            padding: 20px 70px 20px 20px; 
+            background: linear-gradient(to top, rgba(0,0,0,0.6), transparent); 
+            color: white;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .uploader-name { font-weight: 700; font-size: 15px; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+        .uploader-name i { color: var(--accent-color); font-size: 12px; }
+        
+        .video-desc {
+            font-size: 13px; line-height: 1.4; opacity: 0.95;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2; 
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* Back Button on Player */
+        .player-back-btn {
+            position: absolute; top: 20px; left: 20px; 
+            z-index: 410; /* Above Video Feed */
+            width: 40px; height: 40px;
+            background: rgba(0,0,0,0.3); border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; backdrop-filter: blur(5px);
+        }
+        .player-back-btn:active { background: rgba(255,255,255,0.2); }
+
+        /* Video Action Side Bar */
+        .video-actions {
+            position: absolute;
+            bottom: 40px; /* Lower in full screen */
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 20;
+            align-items: center;
+        }
+        
+        .action-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        
+        /* Interaction Buttons */
+        .action-btn {
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(5px);
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .action-btn:active { transform: scale(0.9); }
+        .action-btn.liked { color: #ff4081; background: rgba(255,255,255,0.9); }
+        .action-btn.delete-action { background: rgba(211, 47, 47, 0.7); } 
+        
+        .action-text { font-size: 11px; font-weight: 600; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        /* Floating Plus Button (Upload) */
+        .fab-upload {
+            position: fixed;
+            bottom: 85px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px; height: 60px; 
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 24px;
+            box-shadow: 0 5px 20px rgba(46, 125, 50, 0.5);
+            z-index: 210; /* Lower than Player Overlay(400) */
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+            border: 4px solid var(--white);
+        }
+        .fab-upload:hover { transform: translateX(-50%) scale(1.1) rotate(90deg); }
+
+        /* UPLOAD & COMMENT SLIDE OVERLAY */
+        .upload-modal, .comment-modal {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 90vh; 
+            background: var(--surface-color);
+            z-index: 300; /* Mid Z-Index */
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            transform: translateY(100%);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+            box-shadow: 0 -10px 50px rgba(0,0,0,0.2);
+        }
+        /* Comment specific height */
+        .comment-modal { height: 70vh; z-index: 450; /* Must be above Player(400) */ }
+        
+        .upload-modal.active, .comment-modal.active { transform: translateY(0); }
+
+        .upload-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .upload-title { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
+        .close-upload { font-size: 20px; padding: 10px; cursor: pointer; color: var(--text-light); }
+
+        .upload-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            padding-bottom: 100px; /* Space for scroll */
+        }
+
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; }
+        .form-input { 
+            width: 100%; padding: 14px 15px; 
+            border-radius: 12px; border: 1px solid #ddd;
+            background: #FAFAFA; color: var(--text-main); font-size: 14px; outline: none; transition: 0.2s;
+        }
+        .form-input:focus { border-color: var(--primary-color); background: #fff; box-shadow: 0 4px 12px rgba(46,125,50,0.1); }
+        .form-input[readonly] { background: #E0E0E0; color: #757575; }
+
+        /* New Upload Grid for 2 Options */
+        .upload-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .upload-option-btn {
+            background: #F5F7F6;
+            border: 2px solid transparent;
+            border-radius: 15px;
+            padding: 20px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .upload-option-btn i { font-size: 28px; color: var(--primary-color); }
+        .upload-option-btn span { font-size: 12px; font-weight: 600; color: var(--text-main); }
+        
+        .upload-option-btn:hover { background: var(--surface-dim); border-color: var(--primary-light); }
+        .upload-option-btn:active { transform: scale(0.96); }
+
+        /* Highlight Selected File */
+        .upload-status-box {
+            display: none;
+            align-items: center; gap: 10px;
+            background: #E8F5E9; color: var(--primary-dark);
+            padding: 10px 15px; border-radius: 10px; margin-top: 10px; font-size: 12px; font-weight: 600;
+        }
+
+        .file-upload-box {
+            border: 2px dashed #BDBDBD;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            background: #FAFAFA;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .file-upload-box:hover { border-color: var(--primary-color); background: var(--surface-dim); }
+        .file-icon { font-size: 30px; color: var(--primary-light); margin-bottom: 10px; }
+        .file-text { font-size: 12px; color: #757575; }
+
+        .btn-publish {
+            width: 100%; padding: 16px;
+            border-radius: 30px; border: none;
+            background: var(--primary-gradient);
+            color: white; font-weight: 700; font-size: 16px;
+            box-shadow: 0 8px 20px rgba(46,125,50,0.3);
+            cursor: pointer; transition: 0.2s;
+            margin-top: 10px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-publish:active { transform: scale(0.98); }
+        .btn-publish.loading { opacity: 0.7; pointer-events: none; }
+
+
+        /* Flash Message */
+        .flash-msg-overlay {
+            position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
+            z-index: 70; background: rgba(255,255,255,0.95);
+            padding: 10px 20px; border-radius: 30px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600;
+            color: var(--primary-dark);
+            animation: fadeInDown 0.5s ease;
+        }
+
+        /* 
+         Bottom Nav
+        */
+        .bottom-nav {
+            position: fixed; 
+            bottom: 0; left: 0; right: 0;
+            width: 100%;
+            height: auto; 
+            background: var(--white);
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            padding-top: 8px; 
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.08); 
+            z-index: 200; 
+            border-top-left-radius: 25px; 
+            border-top-right-radius: 25px;
+        }
+
+        .nav-link { 
+            text-decoration: none; color: #90A4AE; display: flex; flex-direction: column; align-items: center; 
+            font-size: 10px;
+            font-weight: 600; transition: var(--transition); position: relative; width: 60px;
+        }
+        .nav-link i { font-size: 19px; margin-bottom: 4px; transition: cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.5s; }
+        
+        .nav-link.active { color: var(--primary-color); }
+        .nav-link.active i { transform: translateY(-4px); font-size: 21px; filter: drop-shadow(0 6px 12px rgba(46,125,50,0.3)); }
+        .nav-link.active::after {
+            content:''; position: absolute; bottom: -5px; width: 6px; height: 6px; background: var(--primary-color); border-radius: 50%;
+        }
+
+        /* Menu Overlay */
+        .menu-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.3); 
+            z-index: 250; /* Higher than FAB */
+            opacity: 0; visibility: hidden; transition: var(--transition); 
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+        }
+        .menu-overlay.active { opacity: 1; visibility: visible; }
+        
+        /* Side Menu */
+        .side-menu {
+            position: fixed; top: 0; left: 0; height: 100%; width: 280px; background: var(--white);
+            z-index: 260; 
+            transform: translateX(-100%); transition: var(--transition);
+            display: flex; flex-direction: column; box-shadow: var(--shadow-float); border-top-right-radius: 30px; border-bottom-right-radius: 30px;
+        }
+        .side-menu.active { transform: translateX(0); }
+        
+        .side-menu-header { padding: 40px 30px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 15px; }
+        .app-brand { font-size: 22px; font-weight: 800; color: var(--primary-color); letter-spacing: 0px; }
+
+        .side-menu ul { list-style: none; padding: 25px; overflow-y: auto; }
+        .menu-link-wrapper {
+            display: flex; justify-content: space-between; align-items: center; padding: 16px 20px;
+            border-radius: 16px; cursor: pointer; color: var(--text-main); text-decoration: none; transition: var(--transition); font-weight: 600; margin-bottom: 8px;
+        }
+        .menu-link-wrapper:hover, .menu-item.active .menu-link-wrapper { background: var(--surface-dim); color: var(--primary-color); }
+        
+        .submenu {
+            display: none; background-color: #FAFAFA; margin: 5px 15px 15px 15px; padding: 8px;
+            border-radius: 14px; border: 1px solid #f0f0f0;
+        }
+        .accordion-item.active .submenu { display: block; animation: fadeIn 0.3s ease; }
+        
+        /* Language Dropdown in Side Menu */
+        .custom-select-wrapper { padding: 5px; width: 100%; }
+        .custom-select { position: relative; font-size: 13px; font-weight: 500; }
+        .custom-select-trigger { 
+            display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; 
+            border: 1px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+            background: #fff;
+        }
+        .custom-select-trigger:hover { border-color: var(--primary-color); }
+        .custom-select.open .custom-select-trigger { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1); }
+        .custom-select-trigger .arrow { transition: transform 0.3s ease; font-size: 11px; color: #888; }
+        .custom-select.open .arrow { transform: rotate(180deg); }
+        .custom-options { 
+            position: absolute; top: 105%; left: 0; right: 0; background: var(--white); 
+            border-radius: 10px; border: 1px solid #f0f0f0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            z-index: 200; max-height: 220px; overflow-y: auto; opacity: 0; visibility: hidden; 
+            transform: translateY(-5px); transition: all 0.3s; 
+        }
+        .custom-select.open .custom-options { opacity: 1; visibility: visible; transform: translateY(0); }
+        .custom-option { 
+            display: block; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #fbfbfb;
+            color: var(--text-main); font-size: 13px; transition: 0.2s;
+        }
+        .custom-option:hover, .custom-option.selected { background-color: var(--surface-dim); color: var(--primary-dark); font-weight: 600; padding-left: 20px; }
+
+        .lang-option {
+            display: block; padding: 10px 15px; font-size: 13px; font-weight: 500; color: #546E7A;
+            border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s;
+        }
+        .lang-option:last-child { border-bottom: none; }
+        .lang-option:hover { color: var(--primary-color); padding-left: 20px; }
+        .support-row { padding: 10px 15px; color: #546E7A; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
+
+        /* User Slide */
+        .user-slide {
+            position: fixed; top: 0; right: 0; width: 100%; height: 100%;
+            background: #FAFAFA; 
+            z-index: 270; 
+            transform: translateY(100%); transition: 0.5s cubic-bezier(0.7, 0, 0.3, 1);
+            display: flex; flex-direction: column;
+            overflow: hidden; 
+        }
+        .user-slide.active { transform: translateY(0); }
+        
+        /* BACKGROUND PATTERN & HEADER ANIMATION */
+        .bg-pattern { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .header-bg-pattern { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+
+        @keyframes floatMove {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(20px, -20px) rotate(10deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .floating-icon {
+            position: absolute; color: var(--primary-color); opacity: 0.05; font-size: 40px;
+            animation: floatMove 20s ease-in-out infinite;
+        }
+
+        .profile-header {
+            padding: 50px 30px 80px; 
+            background: linear-gradient(180deg, #FFFFFF 0%, #F1F8F1 100%);
+            text-align: center; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px;
+            box-shadow: var(--shadow-soft);
+            position: relative; z-index: 1; overflow: hidden; 
+        }
+        
+        .header-icon {
+            position: absolute; color: var(--primary-color); opacity: 0.08; 
+            animation: floatMove 25s ease-in-out infinite;
+        }
+        
+        /* Icon Positions - Main Slide */
+        .icon-1 { top: 10%; left: 5%; font-size: 80px; animation-duration: 25s; opacity: 0.06; }
+        .icon-2 { top: 60%; right: -5%; font-size: 100px; animation-duration: 28s; animation-delay: -5s; opacity: 0.05; }
+        .icon-3 { bottom: 15%; left: 10%; font-size: 70px; animation-duration: 30s; animation-delay: -10s; opacity: 0.07; }
+        .icon-4 { top: 30%; right: 20%; font-size: 60px; animation-duration: 35s; animation-delay: -2s; opacity: 0.05; }
+        .icon-5 { bottom: 30%; left: 40%; font-size: 50px; animation-duration: 22s; animation-delay: -8s; opacity: 0.04; }
+
+        /* Icon Positions - Header Only */
+        .h-icon-1 { top: -10%; left: -10%; font-size: 90px; opacity: 0.05; }
+        .h-icon-2 { top: 10%; right: -5%; font-size: 60px; animation-delay: -7s; opacity: 0.06; }
+        .h-icon-3 { bottom: 5%; left: 15%; font-size: 40px; animation-delay: -12s; opacity: 0.08; }
+        
+        .close-profile {
+            position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.8);
+            width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: var(--text-main); font-size: 18px; cursor: pointer; transition: 0.3s;
+            z-index: 10;
+        }
+        .close-profile:hover { transform: rotate(90deg); background: #fff; }
+        
+        .profile-pic-lg {
+            position: relative; z-index: 5;
+            width: 110px; height: 110px; background: white; border-radius: 50%;
+            margin: 0 auto 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 5px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .profile-pic-lg img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        
+        .profile-info-main { position: relative; z-index: 5; }
+        .profile-info-main h2 { margin: 0; font-size: 24px; color: var(--text-main); }
+        .profile-info-main p { color: var(--white); font-weight: 600; margin-top: 5px; background: var(--primary-color); padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 6px rgba(46, 125, 50, 0.3); }
+
+        .profile-details-list { padding: 30px 20px 100px 20px; overflow-y: auto; position: relative; z-index: 1; }
+        
+        .detail-item {
+            display: flex; align-items: center; margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.95); /* Slight transparency */
+            padding: 20px; border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            transition: var(--transition); border: 1px solid transparent;
+        }
+        .detail-item:hover { transform: scale(1.02); border-color: rgba(46,125,50,0.1); }
+        .detail-icon {
+            width: 46px; height: 46px; background: #F5F7F6; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center; color: var(--primary-dark);
+            font-size: 18px; margin-right: 18px; flex-shrink: 0;
+        }
+        
+        .btn-logout {
+            margin: 10px 10px 40px; padding: 20px; background: #FFEBEE; color: #D32F2F;
+            border-radius: 20px; font-weight: 700; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- Header -->
+    <header class="app-header">
+        <button class="icon-btn" id="menu-btn" aria-label="Open menu" title="Open menu" data-translate-title="open_menu" data-translate-aria-label="open_menu"><i class="fa-solid fa-bars"></i></button>
+        <div class="header-title" data-translate-key="dashboard_title_video">COMMUNITY</div>
+        
+        <button class="icon-btn user-avatar-btn" id="user-btn" aria-label="Open user profile" title="Open user profile" data-translate-title="open_user_profile" data-translate-aria-label="open_user_profile">
+            {% if user.profile_image %}
+                <img src="{{ url_for('static', filename='profiles/' + user.profile_image) }}" 
+                     alt="User" 
+                     data-fallback="{{ url_for('static', filename='default_user.png') }}" 
+                     onerror="this.src=this.dataset.fallback;this.onerror=null;">
+            {% else %}
+                <i class="fa-solid fa-user"></i>
+            {% endif %}
+        </button>
+    </header>
+
+    <div class="app-main">
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-msg-overlay"><i class="fa-solid fa-circle-check"></i> {{ messages[0] }}</div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Floating Upload Button - Bottom Center Position -->
+        <a href="javascript:void(0)" onclick="toggleUpload()" class="fab-upload" aria-label="Upload Video">
+            <i class="fa-solid fa-plus"></i>
+        </a>
+
+        <!-- VIEW 1: VIDEO GRID LIST (Default View) -->
+        {% if videos %}
+            <div class="video-list-grid" id="view-list">
+                {% for video in videos %}
+                <div class="list-card" onclick="openPlayer('{{video.id}}')">
+                    <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" class="list-thumb" alt="Thumb">
+                    <div class="play-overlay-icon"><i class="fa-solid fa-play"></i></div>
+                    <div class="list-card-info">
+                        <div class="list-title">{{ video.description }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- VIEW 2: FULL SCREEN PLAYER OVERLAY (Hidden until clicked) -->
+            <div class="video-feed-overlay" id="view-player">
+                <!-- Back Button inside player (Returns to upload button/grid view) -->
+                <div class="player-back-btn" onclick="closePlayer()">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </div>
+
+                <div class="feed-scroll-container" id="feed-container">
+                    {% for video in videos %}
+                    <div class="video-card" id="card-{{video.id}}">
+                        <!-- 9:16 Full Screen Vertical Video -->
+                        <video class="video-player" loop poster="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" onclick="togglePlay(this)">
+                            <source src="{{ url_for('static', filename='videos/' + video.filename) }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        
+                        <div class="video-info-overlay">
+                            <div class="uploader-name"><i class="fa-solid fa-user-check"></i> {{ video.farmer_name }}</div>
+                            <div class="video-desc">{{ video.description }}</div>
+                            <div style="font-size:11px; margin-top:5px; opacity:0.8;">Exp: {{ video.expiry_date }}</div>
+                        </div>
+
+                        <div class="video-actions">
+                            <!-- AJAX Heart Button -->
+                            <div class="action-item">
+                                <button class="action-btn {% if video.has_liked %}liked{% endif %}" onclick="toggleLike(this, '{{ video.id }}')" title="Like video" aria-label="Like video">
+                                    <i class="fa-solid fa-heart"></i>
+                                </button>
+                                <span class="action-text like-count" data-translate-key="lbl_likes">{{ video.likes|default(0) }}</span>
+                            </div>
+
+                            <!-- Comment Link (No Redirect) -->
+                            <div class="action-item">
+                                <button class="action-btn" onclick="toggleComments('{{ video.id }}')" title="Comments" aria-label="View comments">
+                                    <i class="fa-solid fa-comment-dots"></i>
+                                </button>
+                                <span class="action-text" data-translate-key="lbl_comment">{{ video.comments|length }}</span>
+                            </div>
+                            
+                            <div class="action-item">
+                                <button class="action-btn" onclick="shareVideo('{{ video.id }}')" title="Share video" aria-label="Share video">
+                                    <i class="fa-solid fa-share"></i>
+                                </button>
+                                <span class="action-text" data-translate-key="lbl_share">Share</span>
+                            </div>
+
+                            <!-- Delete Button -->
+                            <div class="action-item">
+                                <button class="action-btn delete-action" onclick="deleteVideo('{{ video.id }}')" title="Delete video">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                                <span class="action-text" style="font-size:10px;">Del</span>
+                            </div>
+
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Empty State -->
+            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#546E7A; margin-top:100px;">
+                <div style="width:80px; height:80px; background:#F5F5F5; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+                    <i class="fa-solid fa-film" style="font-size:40px; color:#B0BEC5;"></i>
+                </div>
+                <p data-translate-key="no_videos_msg" style="font-weight:600;">No videos available yet.</p>
+                <p style="font-size:12px; opacity:0.7;">Upload your first crop video!</p>
+            </div>
+        {% endif %}
+    </div> 
+
+    <nav class="bottom-nav">
+        <a href="/farmer/dashboard" class="nav-link">
+            <i class="fa-solid fa-house-chimney"></i>
+            <span data-translate-key="nav_home">Home</span>
+        </a>
+        <a href="/farmer/videos" class="nav-link active">
+            <i class="fa-solid fa-play-circle"></i>
+            <span data-translate-key="nav_videos">Videos</span>
+        </a>
+    </nav>
+
+</div> 
+
+<!-- MENUS -->
+<div class="menu-overlay" id="menu-overlay"></div>
+<div class="side-menu" id="side-menu">
+    <div class="side-menu-header">
+        <img src="{{ url_for('static', filename='logo.png') }}" 
+             onerror="this.style.display='none'; document.querySelector('.app-logo-fallback').style.display='block';" 
+             alt="Logo" class="app-logo" style="height:40px; width:auto;">
+        <i class="fa-solid fa-leaf app-logo-fallback" style="font-size:30px; color:var(--primary-color); display:none;"></i>
+        <div class="app-brand" style="margin-left:10px;">KRISHIKA</div>
+    </div>
+    <ul>
+        <li class="menu-item">
+            <a href="/farmer/list" class="menu-link-wrapper">
+                <span><i class="fa-solid fa-list menu-icon-left" style="margin-right:15px; width:20px; color:var(--primary-color);"></i> <span data-translate-key="menu_my_crops">My Crops</span></span>
+                <i class="fa-solid fa-chevron-right" style="font-size:12px; color:#ddd;"></i>
+            </a>
+        </li>
+
+        <li class="menu-item accordion-item">
+            <div class="menu-link-wrapper">
+                <span><i class="fa-solid fa-earth-americas menu-icon-left" style="margin-right:15px; width:20px; color:var(--primary-color);"></i> <span data-translate-key="menu_language">Language</span></span>
+                <i class="fa-solid fa-chevron-down" style="font-size:12px;"></i>
+            </div>
+            <div class="submenu">
+                <div class="custom-select-wrapper">
+                    <div class="custom-select">
+                        <div class="custom-select-trigger">
+                            <span>English</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <span class="custom-option" data-value="en">English</span>
+                            <span class="custom-option" data-value="as">অসমীয়া (Assamese)</span>
+                            <span class="custom-option" data-value="bn">বাংলা (Bengali)</span>
+                            <span class="custom-option" data-value="brx">बोड़ो (Bodo)</span>
+                            <span class="custom-option" data-value="doi">डोगरी (Dogri)</span>
+                            <span class="custom-option" data-value="gu">ગુજરાતી (Gujarati)</span>
+                            <span class="custom-option" data-value="hi">हिन्दी (Hindi)</span>
+                            <span class="custom-option" data-value="kn">ಕನ್ನಡ (Kannada)</span>
+                            <span class="custom-option" data-value="ks">کٲشُر (Kashmiri)</span>
+                            <span class="custom-option" data-value="kok">कोंकणी (Konkani)</span>
+                            <span class="custom-option" data-value="mai">मैथिली (Maithili)</span>
+                            <span class="custom-option" data-value="ml">മലയാളം (Malayalam)</span>
+                            <span class="custom-option" data-value="mni">মৈতৈলোন্ (Manipuri)</span>
+                            <span class="custom-option" data-value="mr">मराठी (Marathi)</span>
+                            <span class="custom-option" data-value="ne">नेपाली (Nepali)</span>
+                            <span class="custom-option" data-value="or">ଓଡ଼ିଆ (Odia)</span>
+                            <span class="custom-option" data-value="pa">ਪੰਜਾਬੀ (Punjabi)</span>
+                            <span class="custom-option" data-value="sa">संस्कृतम् (Sanskrit)</span>
+                            <span class="custom-option" data-value="sat">ᱥᱟᱱᱛᱟᱲᱤ (Santali)</span>
+                            <span class="custom-option" data-value="sd">सिंधी (Sindhi)</span>
+                            <span class="custom-option" data-value="ta">தமிழ் (Tamil)</span>
+                            <span class="custom-option" data-value="te">తెలుగు (Telugu)</span>
+                            <span class="custom-option" data-value="ur">اردو (Urdu)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </li>
+
+        <li class="menu-item accordion-item">
+            <div class="menu-link-wrapper">
+                <span><i class="fa-solid fa-headset menu-icon-left" style="margin-right:15px; width:20px; color:var(--primary-color);"></i> <span data-translate-key="menu_support">Support</span></span>
+                <i class="fa-solid fa-chevron-down" style="font-size:12px;"></i>
+            </div>
+            <div class="submenu">
+                <div class="support-row"><i class="fa-solid fa-envelope"></i> support@krishika.com</div>
+                <div class="support-row"><i class="fa-solid fa-phone"></i> 1800-KISAN-HELP</div>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<!-- Upload Slide Modal -->
+<div class="menu-overlay" id="upload-overlay"></div>
+<div class="upload-modal" id="upload-slide">
+    <div class="upload-header">
+        <div class="upload-title">New Crop Video</div>
+        <i class="fa-solid fa-xmark close-upload" onclick="toggleUpload()"></i>
+    </div>
+    
+    <div class="upload-body">
+        <form id="videoUploadForm" onsubmit="uploadVideo(event)" enctype="multipart/form-data">
+            
+            <div class="form-group">
+                <label class="form-label">Video Source (Required)</label>
+                <div class="upload-options-grid">
+                    <div class="upload-option-btn" onclick="document.getElementById('camera_input').click()">
+                        <i class="fa-solid fa-video"></i>
+                        <span>Record Video</span>
+                    </div>
+                    <div class="upload-option-btn" onclick="document.getElementById('gallery_input').click()">
+                        <i class="fa-regular fa-file-video"></i>
+                        <span>From Gallery</span>
+                    </div>
+                </div>
+
+                <input type="file" name="video_file" id="camera_input" accept="video/*" capture="environment" style="display:none" onchange="fileSelected(this)">
+                <input type="file" id="gallery_input" accept="video/*" style="display:none" onchange="fileSelected(this)">
+                
+                <div id="video-selected-status" class="upload-status-box">
+                    <i class="fa-solid fa-circle-check"></i> <span id="video-filename">No video selected</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" name="title" class="form-input" placeholder="e.g. Fresh Wheat Crop" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-input" rows="3" placeholder="Describe quality, price, etc." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Thumbnail Image</label>
+                <div class="file-upload-box" onclick="document.getElementById('thumb_file').click()">
+                    <i class="fa-regular fa-image file-icon"></i>
+                    <div class="file-text">Click to upload thumbnail</div>
+                    <input type="file" name="thumbnail" id="thumb_file" accept="image/*" style="display:none" onchange="this.previousElementSibling.textContent = this.files[0].name" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Expiry Date</label>
+                <input type="date" name="expiry_date" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">WhatsApp Number</label>
+                <input type="text" name="whatsapp_no" class="form-input" value="{{ user.phone }}" readonly>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-publish">
+                <i class="fa-solid fa-paper-plane"></i> Publish Video
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Comment Slide Modal -->
+<div class="comment-modal" id="comment-slide">
+    <div class="upload-header">
+        <div class="upload-title">Comments</div>
+        <i class="fa-solid fa-xmark close-upload" onclick="toggleComments()"></i>
+    </div>
+    <div class="upload-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; color:#90A4AE;">
+        <i class="fa-regular fa-comments" style="font-size:40px; margin-bottom:15px; opacity:0.5;"></i>
+        <p>Comments for this video</p>
+        <div style="margin-top:20px; width:100%;">
+            <input type="text" class="form-input" placeholder="Write a comment..." style="border-radius:20px;">
+        </div>
+    </div>
+</div>
+
+<!-- User Slide -->
+<div class="user-slide" id="user-slide">
+    <!-- BACKGROUND PATTERN -->
+    <div class="bg-pattern">
+        <i class="fa-solid fa-wheat-awn floating-icon icon-1"></i>
+        <i class="fa-solid fa-leaf floating-icon icon-2"></i>
+        <i class="fa-solid fa-carrot floating-icon icon-3"></i>
+        <i class="fa-solid fa-tractor floating-icon icon-4"></i>
+        <i class="fa-solid fa-seedling floating-icon icon-5"></i>
+    </div>
+
+    <!-- PROFILE HEADER -->
+    <div class="profile-header">
+        <div class="header-bg-pattern">
+            <i class="fa-solid fa-cloud-sun header-icon h-icon-1"></i>
+            <i class="fa-solid fa-spa header-icon h-icon-2"></i>
+            <i class="fa-solid fa-seedling header-icon h-icon-3"></i>
+        </div>
+
+        <div class="close-profile" id="close-user-slide" role="button" aria-label="Close profile"><i class="fa-solid fa-xmark"></i></div>
+        
+        <div class="profile-pic-lg">
+            {% if user.profile_image %}
+                <img src="{{ url_for('static', filename='profiles/' + user.profile_image) }}" 
+                     alt="Profile Photo" 
+                     data-fallback="{{ url_for('static', filename='default_user.png') }}"
+                     onerror="this.src=this.dataset.fallback;this.onerror=null;">
+            {% else %}
+                <i class="fa-solid fa-user" style="font-size:40px; color:#CFD8DC;"></i>
+            {% endif %}
+        </div>
+        
+        <div class="profile-info-main">
+            <h2>{{ user.name }}</h2>
+            <p>Verified Farmer</p>
+        </div>
+    </div>
+
+    <div class="profile-details-list">
+        <div class="detail-item">
+            <div class="detail-icon"><i class="fa-solid fa-envelope"></i></div>
+            <div class="detail-content">
+                <strong style="color:var(--text-light); font-size:11px; text-transform:uppercase;">Email</strong>
+                <span style="font-weight:600; color:var(--text-main);">{{ user.email }}</span>
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <div class="detail-icon"><i class="fa-brands fa-whatsapp"></i></div>
+            <div class="detail-content">
+                <strong style="color:var(--text-light); font-size:11px; text-transform:uppercase;">Mobile / WhatsApp</strong>
+                <span style="font-weight:600; color:var(--text-main);">{{ user.phone if user.phone else 'N/A' }}</span>
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <div class="detail-icon"><i class="fa-solid fa-map-pin"></i></div>
+            <div class="detail-content">
+                <strong style="color:var(--text-light); font-size:11px; text-transform:uppercase;" data-translate-key="label_location">Location</strong>
+                <span style="font-weight:600; color:var(--text-main);">
+                    {{ user.village if user.village else 'Location Not Set' }}
+                </span>
+            </div>
+        </div>
+
+        <div class="detail-item">
+            <div class="detail-icon"><i class="fa-solid fa-map"></i></div>
+            <div class="detail-content">
+                <strong style="color:var(--text-light); font-size:11px; text-transform:uppercase;">State</strong>
+                <span style="font-weight:600; color:var(--text-main);">
+                    {{ user.state if user.state else 'N/A' }}
+                </span>
+            </div>
+        </div>
+        
+        <a href="/logout" class="btn-logout">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> <span data-translate-key="logout_btn">Sign Out</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    /* MENU & UI INTERACTION */
+    const menuBtn = document.getElementById('menu-btn');
+    const sideMenu = document.getElementById('side-menu');
+    const overlay = document.getElementById('menu-overlay');
+
+    function toggleMenu() {
+        sideMenu.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    menuBtn.addEventListener('click', toggleMenu);
+    overlay.addEventListener('click', () => {
+        sideMenu.classList.remove('active');
+        document.getElementById('upload-slide').classList.remove('active');
+        document.getElementById('comment-slide').classList.remove('active'); 
+        document.getElementById('upload-overlay').classList.remove('active');
+        overlay.classList.remove('active');
+    });
+
+    const userBtn = document.getElementById('user-btn');
+    const userSlide = document.getElementById('user-slide');
+    const closeUserBtn = document.getElementById('close-user-slide');
+
+    userBtn.addEventListener('click', () => {
+        userSlide.classList.add('active');
+    });
+    closeUserBtn.addEventListener('click', () => {
+        userSlide.classList.remove('active');
+    });
+
+    /* ==========================================================
+       LIST TO PLAYER NAVIGATION LOGIC
+       ========================================================== */
+    const playerView = document.getElementById('view-player');
+    const scrollContainer = document.getElementById('feed-container');
+
+    function openPlayer(videoId) {
+        playerView.classList.add('active');
+        // Wait slightly for display block to apply before scrolling
+        setTimeout(() => {
+            const card = document.getElementById('card-' + videoId);
+            if(card) {
+                card.scrollIntoView({ block: 'start' }); // Jump to video
+                
+                // Attempt autoplay
+                const video = card.querySelector('video');
+                if(video) video.play().catch(e=>console.log("Autoplay policy restricted", e));
+            }
+        }, 50);
+    }
+
+    function closePlayer() {
+        playerView.classList.remove('active');
+        // Pause all videos
+        document.querySelectorAll('video').forEach(vid => vid.pause());
+    }
+
+    /* UPLOAD HANDLING */
+    const uploadSlide = document.getElementById('upload-slide');
+    const uploadOverlay = document.getElementById('upload-overlay');
+    
+    function toggleUpload() {
+        uploadSlide.classList.toggle('active');
+        uploadOverlay.classList.toggle('active');
+    }
+    
+    /* Comment Handling */
+    const commentSlide = document.getElementById('comment-slide');
+    function toggleComments(videoId) {
+        commentSlide.classList.toggle('active');
+        uploadOverlay.classList.toggle('active');
+    }
+
+    uploadOverlay.addEventListener('click', () => {
+        uploadSlide.classList.remove('active');
+        commentSlide.classList.remove('active');
+        uploadOverlay.classList.remove('active');
+    });
+
+    // Handle File Selection 
+    function fileSelected(input) {
+        if(input.id === 'camera_input') {
+            document.getElementById('gallery_input').value = '';
+        } else {
+            document.getElementById('camera_input').value = '';
+        }
+        if(input.files && input.files[0]) {
+            document.getElementById('video-selected-status').style.display = 'flex';
+            document.getElementById('video-filename').textContent = input.files[0].name;
+        }
+    }
+
+    // Handle AJAX Upload 
+    function uploadVideo(event) {
+        event.preventDefault(); 
+        const form = document.getElementById('videoUploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const formData = new FormData(form);
+        const cameraInput = document.getElementById('camera_input');
+        const galleryInput = document.getElementById('gallery_input');
+
+        if (!cameraInput.files.length && !galleryInput.files.length) {
+            alert("Please select a video or record one.");
+            return;
+        }
+
+        if (galleryInput.files.length > 0) {
+            formData.set('video_file', galleryInput.files[0]);
+        }
+
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+        submitBtn.classList.add('loading');
+
+        fetch('/farmer/upload_video', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else if(response.status === 404) {
+                alert("Error: Backend route missing (404).");
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publish Video';
+                submitBtn.classList.remove('loading');
+            } else {
+                alert("Upload failed. Please try again.");
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publish Video';
+                submitBtn.classList.remove('loading');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("An error occurred during upload.");
+            submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publish Video';
+            submitBtn.classList.remove('loading');
+        });
+    }
+
+    document.querySelectorAll('.accordion-item > .menu-link-wrapper').forEach(item => {
+        item.addEventListener('click', (e) => {
+            const parent = item.parentElement;
+            parent.classList.toggle('active');
+            document.querySelectorAll('.accordion-item').forEach(other => {
+                if (other !== parent) other.classList.remove('active');
+            });
+        });
+    });
+
+    /* VIDEO HANDLING & AJAX */
+    function togglePlay(video) {
+        if(video.paused) video.play();
+        else video.pause();
+    }
+
+    function toggleLike(btn, videoId) {
+        btn.classList.toggle('liked');
+        const countSpan = btn.parentElement.querySelector('.like-count');
+        let currentCount = parseInt(countSpan.textContent);
+        
+        if (btn.classList.contains('liked')) {
+            countSpan.textContent = currentCount + 1;
+        } else {
+            countSpan.textContent = Math.max(0, currentCount - 1);
+        }
+
+        fetch(`/like_video/${videoId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        }).catch(err => console.error("Like failed", err));
+    }
+    
+    function shareVideo(videoId) {
+        if(navigator.share) {
+            navigator.share({
+                title: 'Check out this video',
+                url: window.location.origin + '/farmer/video/' + videoId
+            }).catch(console.error);
+        } else {
+            alert('Copy link: ' + window.location.origin + '/farmer/video/' + videoId);
+        }
+    }
+
+    function deleteVideo(videoId) {
+        if(confirm('Are you sure you want to delete this video?')) {
+            fetch(`/delete_video/${videoId}`, {
+                method: 'POST',
+            }).then(response => {
+                if(response.ok) {
+                    const card = document.getElementById('card-' + videoId);
+                    if(card) card.remove();
+                    window.location.reload();
+                } else {
+                    alert('Could not delete video');
+                }
+            }).catch(err => console.error(err));
+        }
+    }
+
+    // Auto Play on Scroll
+    document.addEventListener('DOMContentLoaded', () => {
+        const feedContainer = document.getElementById('feed-container');
+        // Only run intersection observer for feed, not list thumbnails
+        const feedVideos = feedContainer.querySelectorAll('video');
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.play().catch(e => console.log("Auto-play blocked", e));
+                } else {
+                    entry.target.pause();
+                    entry.target.currentTime = 0; 
+                }
+            });
+        }, { threshold: 0.6, root: feedContainer });
+
+        feedVideos.forEach(v => observer.observe(v));
+    });
+
+
+    /* TRANSLATION LOGIC */
+    const translations = {
+        'en': { page_title_video: 'Krishika - Community', dashboard_title_video: 'COMMUNITY', menu_my_crops: 'My Crops', menu_language: 'Language', menu_support: 'Support', open_menu: 'Open menu', open_user_profile: 'Open user profile', label_location: 'Location', logout_btn: 'Sign Out', nav_home: 'Home', nav_videos: 'Videos', no_videos_msg: 'No videos available.', lbl_likes: '0', lbl_comment: 'Comment', lbl_share: 'Share' },
+        'hi': { page_title_video: 'कृषिका - समुदाय', dashboard_title_video: 'समुदाय', menu_my_crops: 'मेरी फसलें', menu_language: 'भाषा', menu_support: 'समर्थन', open_menu: 'मेनू खोलें', open_user_profile: 'प्रोफाइल खोलें', label_location: 'स्थान', logout_btn: 'साइन आउट', nav_home: 'होम', nav_videos: 'वीडियो', no_videos_msg: 'कोई वीडियो उपलब्ध नहीं है।', lbl_likes: '0', lbl_comment: 'टिप्पणी', lbl_share: 'शेयर' },
+        'mr': { page_title_video: 'कृषिका - समुदाय', dashboard_title_video: 'समुदाय', menu_my_crops: 'माझी पिके', menu_language: 'भाषा', menu_support: 'मदत', open_menu: 'मेनू उघडा', open_user_profile: 'प्रोफाइल उघडा', label_location: 'स्थान', logout_btn: 'बाहेर पडा', nav_home: 'होम', nav_videos: 'व्हिडिओ', no_videos_msg: 'कोणतेही व्हिडिओ उपलब्ध नाहीत.', lbl_likes: '0', lbl_comment: 'टिप्पणी', lbl_share: 'शेअर' },
+        'gu': { page_title_video: 'કૃષિકા - સમુદાય', dashboard_title_video: 'સમુદાય', menu_my_crops: 'મારા પાક', menu_language: 'ભાષા', menu_support: 'આધાર', open_menu: 'મેનુ ખોલો', open_user_profile: 'પ્રોફાઇલ ખોલો', label_location: 'સ્થાન', logout_btn: 'સાઇન આઉટ', nav_home: 'હોમ', nav_videos: 'વિડિઓ', no_videos_msg: 'કોઈ વિડિઓ ઉપલબ્ધ નથી.', lbl_likes: '0', lbl_comment: 'ટિપ્પણી', lbl_share: 'શેર' },
+        'bn': { page_title_video: 'কৃষিকা - সম্প্রদায়', dashboard_title_video: 'সম্প্রদায়', menu_my_crops: 'আমার ফসল', menu_language: 'भाषा', menu_support: 'সহায়তা', open_menu: 'মেনু খুলুন', open_user_profile: 'প্রোফাইল খুলুন', label_location: 'অবস্থান', logout_btn: 'সাইন আউট', nav_home: 'হোম', nav_videos: 'ভিডিও', no_videos_msg: 'কোন ভিডিও পাওয়া যাচ্ছে না।', lbl_likes: '0', lbl_comment: 'মন্তব্য', lbl_share: 'শেয়ার' },
+        'pa': { page_title_video: 'ਕ੍ਰਿਸ਼ਿਕਾ - ਭਾਈਚਾਰਾ', dashboard_title_video: 'ਭਾਈਚਾਰਾ', menu_my_crops: 'ਮੇਰੀ ਫਸਲ', menu_language: 'ਭਾਸ਼ਾ', menu_support: 'ਸਹਾਇਤਾ', open_menu: 'ਮੀਨੂ ਖੋਲ੍ਹੋ', open_user_profile: 'ਪ੍ਰੋਫਾਈਲ ਖੋਲ੍ਹੋ', label_location: 'ਸਥਾਨ', logout_btn: 'ਸਾਈਨ ਆਉਟ', nav_home: 'ਹੋਮ', nav_videos: 'ਵੀਡੀਓ', no_videos_msg: 'ਕੋਈ ਵੀਡੀਓ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।', lbl_likes: '0', lbl_comment: 'ਟਿੱਪਣੀ', lbl_share: 'ਸਾਂਝਾ ਕਰੋ' },
+        'te': { page_title_video: 'కృషిక - సంఘం', dashboard_title_video: 'సంఘం', menu_my_crops: 'నా పంటలు', menu_language: 'భాష', menu_support: 'సహాయం', open_menu: 'మెను తెరవండి', open_user_profile: 'ప్రొఫైల్ తెరవండి', label_location: 'నగరము', logout_btn: 'సైన్ అవుట్', nav_home: 'హోమ్', nav_videos: 'వీడియోలు', no_videos_msg: 'వీడియోలు అందుబాటులో లేవు.', lbl_likes: '0', lbl_comment: 'వ్యాఖ్య', lbl_share: 'భాగస్వామ్యం' },
+        'ta': { page_title_video: 'கிரிஷிகா - சமூகம்', dashboard_title_video: 'சமூகம்', menu_my_crops: 'எனது பயிர்கள்', menu_language: 'மொழி', menu_support: 'ஆதரவு', open_menu: 'மெனுவைத் திற', open_user_profile: 'சுயவிவரத்தைத் திற', label_location: 'இடம்', logout_btn: 'வெளியேறு', nav_home: 'முகப்பு', nav_videos: 'வீடியோ', no_videos_msg: 'வீடியோக்கள் இல்லை.', lbl_likes: '0', lbl_comment: 'கருத்து', lbl_share: 'பகிர்' },
+        'ml': { page_title_video: 'കൃഷിക - സമൂഹം', dashboard_title_video: 'സമൂഹം', menu_my_crops: 'എന്റെ വിളകൾ', menu_language: 'ഭാഷ', menu_support: 'പിന്തുണ', open_menu: 'മെനു തുറക്കുക', open_user_profile: 'പ്രൊഫൈൽ തുറക്കുക', label_location: 'സ്ഥലം', logout_btn: 'സൈൻ ഔട്ട്', nav_home: 'ഹോം', nav_videos: 'വീഡിയോ', no_videos_msg: 'വീഡിയോകൾ ലഭ്യമല്ല.', lbl_likes: '0', lbl_comment: 'അഭിപ്രായം', lbl_share: 'പങ്കിടുക' },
+        'kn': { page_title_video: 'ಕೃಷಿಕಾ - ಸಮುದಾಯ', dashboard_title_video: 'ಸಮುದಾಯ', menu_my_crops: 'ನನ್ನ ಬೆಳೆಗಳು', menu_language: 'ಭಾಷೆ', menu_support: 'ಬೆಂಬಲ', open_menu: 'ಮೆನು ತೆರೆಯಿರಿ', open_user_profile: 'ಪ್ರೊಫೈಲ್ ತೆರೆಯಿರಿ', label_location: 'ಸ್ಥಳ', logout_btn: 'ಸೈನ್ ಔಟ್', nav_home: 'ಹೋಮ್', nav_videos: 'ವೀಡಿಯೊ', no_videos_msg: 'ವೀಡಿಯೊಗಳು ಲಭ್ಯವಿಲ್ಲ.', lbl_likes: '0', lbl_comment: 'ಕಾಮೆಂಟ್', lbl_share: 'ಹಂಚಿಕೊಳ್ಳಿ' },
+        'ur': { page_title_video: 'کرشیکا - کمیونٹی', dashboard_title_video: 'کمیونٹی', menu_my_crops: 'میری فصلیں', menu_language: 'زبان', menu_support: 'سپورٹ', open_menu: 'مینو کھولیں', open_user_profile: 'پروفائل کھولیں', label_location: 'مقام', logout_btn: 'سائن آؤٹ', nav_home: 'ہوم', nav_videos: 'ویڈیوز', no_videos_msg: 'کوئی ویڈیو دستیاب نہیں ہے۔', lbl_likes: '0', lbl_comment: 'تبصرہ', lbl_share: 'شیئر کریں' },
+        'or': { page_title_video: 'कॄषिका - समूदै', dashboard_title_video: 'समूदै', menu_my_crops: 'मूर् फसल', menu_language: 'भासा', menu_support: 'सहजोग', open_menu: 'मेनू खॊल', open_user_profile: 'प्रॊफैल खॊल', label_location: 'स्दन्', logout_btn: 'सैन ओउट', nav_home: 'हॊम', nav_videos: 'विडिओ', no_videos_msg: 'कोनॊ विडिओ ऊपलभध नहीँ', lbl_likes: '0', lbl_comment: 'टिप्पणी', lbl_share: 'शेर कर' },
+        'as': { page_title_video: 'কৃষিকা - সম্প্ৰদায়', dashboard_title_video: 'সম্প্ৰদায়', menu_my_crops: 'মোৰ শস্য', menu_language: 'ভাষা', menu_support: 'সহায়', open_menu: 'মেনু খোলক', open_user_profile: 'প্ৰফাইল খোলক', label_location: 'স্থান', logout_btn: 'ছাইন আউট', nav_home: 'হোম', nav_videos: 'ভিডিঅ’', no_videos_msg: 'কোনো ভিডিঅ’ উপলব্ধ নাই।', lbl_likes: '0', lbl_comment: 'মন্তব্য', lbl_share: 'শ্বেয়াৰ' },
+        'mni': { page_title_video: 'কৃশিকা - খুন্নাই', dashboard_title_video: 'খুন্নাই', menu_my_crops: 'ঐগী মহৈ মরোং', menu_language: 'লোল', menu_support: 'মতেং', open_menu: 'মেনু হাংদোকউ', open_user_profile: 'প্রোফাইল হাংদোকউ', label_location: 'মফম', logout_btn: 'থোক্লকপা', nav_home: 'য়ুম', nav_videos: 'ভিদিও', no_videos_msg: 'ভিদিও লৈতে।', lbl_likes: '0', lbl_comment: 'কমেন্ট', lbl_share: 'শেয়ার' },
+        'ne': { page_title_video: 'कृषिका - समुदाय', dashboard_title_video: 'समुदाय', menu_my_crops: 'मेरो बाली', menu_language: 'भाषा', menu_support: 'सहयोग', open_menu: 'मेनु खोल्नुहोस्', open_user_profile: 'प्रोफाइल खोल्नुहोस्', label_location: 'स्थान', logout_btn: 'साइन आउट', nav_home: 'गृहपृष्ठ', nav_videos: 'भिडियो', no_videos_msg: 'भिडियो उपलब्ध छैन।', lbl_likes: '0', lbl_comment: 'टिप्पणी', lbl_share: 'शेयर' },
+        'sa': { page_title_video: 'कृषिका - समुदायः', dashboard_title_video: 'समुदायः', menu_my_crops: 'मम सस्यानि', menu_language: 'भाषा', menu_support: 'साहाय्यम्', open_menu: 'सूची उद्घाटयतु', open_user_profile: 'रूपरेखा उद्घाटयतु', label_location: 'स्थानम्', logout_btn: 'निर्गमनम्', nav_home: 'गृहम्', nav_videos: 'चलचित्राणि', no_videos_msg: 'चलचित्राणि न लभ्यन्ते।', lbl_likes: '0', lbl_comment: 'टिप्पणी', lbl_share: 'संवितरतु' },
+        'sd': { page_title_video: 'ڪرشڪا - ڪميونٽي', dashboard_title_video: 'ڪميونٽي', menu_my_crops: 'منهنجا فصل', menu_language: 'ٻولي', menu_support: 'مدد', open_menu: 'مينيو کوليو', open_user_profile: 'پروفائل کوليو', label_location: 'مقام', logout_btn: 'لاگ آئوٽ', nav_home: 'گهر', nav_videos: 'وڊيو', no_videos_msg: 'ڪا به وڊيو دستياب ناهي.', lbl_likes: '0', lbl_comment: 'تبصرو', lbl_share: 'شيئر ڪريو' },
+        'doi': { page_title_video: 'कृषिका - समुदाय', dashboard_title_video: 'समुदाय', menu_my_crops: 'मेरी फसलां', menu_language: 'भाषा', menu_support: 'समर्थन', open_menu: 'मेन्यू खोलो', open_user_profile: 'प्रोफाइल खोलो', label_location: 'स्थान', logout_btn: 'साइन आउट', nav_home: 'घर', nav_videos: 'वीडियो', no_videos_msg: 'कोई वीडियो उपलब्ध नेईं ऐ।', lbl_likes: '0', lbl_comment: 'टिप्पणी', lbl_share: 'साझा करो' },
+        'kok': { page_title_video: 'कृषिका - समुदाय', dashboard_title_video: 'समुदाय', menu_my_crops: 'म्हाजीं पिकां', menu_language: 'भास', menu_support: 'आदार', open_menu: 'मेनु उक्तें कर', open_user_profile: 'प्रोफाइल उक्तें कर', label_location: 'जागो', logout_btn: 'भायर सर', nav_home: 'घर', nav_videos: 'व्हिडिओ', no_videos_msg: 'व्हिडिओ उपलब्ध नात.', lbl_likes: '0', lbl_comment: 'टिपण्णी', lbl_share: 'वाटा' },
+        'brx': { page_title_video: 'कृषिका - राइजो', dashboard_title_video: 'राइजो', menu_my_crops: 'आंनि आबाद', menu_language: 'राव', menu_support: 'मदत', open_menu: 'मेनु खेव', open_user_profile: 'प्रफाइल खेव', label_location: 'जायगा', logout_btn: 'अंखार', nav_home: 'न', nav_videos: 'भिडिअ', no_videos_msg: 'जेबो भिडिअ गैया।', lbl_likes: '0', lbl_comment: 'बिबुं', lbl_share: 'शेयर' },
+        'mai': { page_title_video: 'कृषिका - समुदाय', dashboard_title_video: 'समुदाय', menu_my_crops: 'हमर फसल', menu_language: 'भाषा', menu_support: 'समर्थन', open_menu: 'मेनू खोलू', open_user_profile: 'प्रोफाइल खोलू', label_location: 'स्थान', logout_btn: 'निकलू', nav_home: 'घर', nav_videos: 'वीडियो', no_videos_msg: 'कोनो वीडियो उपलब्ध नहि अछि।', lbl_likes: '0', lbl_comment: 'टिप्पणी', lbl_share: 'साझा करू' },
+        'sat': { page_title_video: 'ᱠᱨᱤᱥᱤᱠᱟ - ᱜᱟᱶᱛᱟ', dashboard_title_video: 'ᱜᱟᱶᱛᱟ', menu_my_crops: 'ᱤᱧᱟᱜ ᱪᱟᱥ', menu_language: 'ᱯᱟᱹᱨᱥᱤ', menu_support: 'ᱜᱚᱲᱚ', open_menu: 'ᱢᱮᱱᱩ ᱡᱷᱤᱡ', open_user_profile: 'ᱯᱨᱚᱯᱷᱟᱭᱤᱞ ᱡᱷᱤᱡ', label_location: 'ᱴᱷᱟᱶ', logout_btn: 'ᱚᱰᱚᱠ', nav_home: 'ᱚᱲᱟᱜ', nav_videos: 'ᱵᱤᱰᱤᱭᱳ', no_videos_msg: 'ᱵᱤᱰᱤᱭᱳ ᱵᱟᱹᱱᱩᱜᱼᱟ᱾', lbl_likes: '0', lbl_comment: 'ᱠᱚᱢᱮᱸᱴ', lbl_share: 'ᱥᱮᱭᱟᱨ' },
+        'ks': { page_title_video: 'کرشکا - برادری', dashboard_title_video: 'برادری', menu_my_crops: 'میٲنی فصل', menu_language: 'زبان', menu_support: 'مدد', open_menu: 'مینو کَڈیو', open_user_profile: 'پروفائل کَڈیو', label_location: 'جاۓ', logout_btn: 'لاگ آؤٹ', nav_home: 'گھر', nav_videos: 'ویڈیوز', no_videos_msg: 'کانہہ ویڈیو دستیاب چھُ نہ۔', lbl_likes: '0', lbl_comment: 'تبصرہ', lbl_share: 'شیئر' }
+    };
+
+    const customSelect = document.querySelector('.custom-select');
+    const selectTrigger = customSelect.querySelector('.custom-select-trigger');
+    const options = customSelect.querySelectorAll('.custom-option');
+    const triggerSpan = selectTrigger.querySelector('span');
+
+    const translatePage = (lang) => {
+        localStorage.setItem('farmerLanguage', lang);
+        const hiddenInput = document.getElementById('selected-language-input');
+        if(hiddenInput) hiddenInput.value = lang;
+
+        const langTranslations = translations[lang] || translations['en'];
+
+        document.querySelectorAll('[data-translate-key]').forEach(el => {
+            const key = el.dataset.translateKey;
+            let translation = langTranslations[key] || translations['en'][key];
+            
+            if(translation && el.innerHTML !== translation) {
+                if(key === 'lbl_likes' && !isNaN(el.innerHTML)) return; 
+                el.innerHTML = translation;
+            }
+        });
+        
+        document.querySelectorAll('[data-translate-title]').forEach(el => {
+            const key = el.dataset.translateTitle;
+            const translation = langTranslations[key] || translations['en'][key];
+            if(translation) el.title = translation;
+        });
+
+        document.querySelectorAll('[data-translate-aria-label]').forEach(el => {
+            const key = el.dataset.translateAriaLabel;
+            const translation = langTranslations[key] || translations['en'][key];
+            if(translation) el.setAttribute('aria-label', translation);
+        });
+
+        const currentOption = customSelect.querySelector(`.custom-option[data-value="${lang}"]`);
+        if (currentOption) {
+            triggerSpan.textContent = currentOption.textContent;
+            options.forEach(opt => opt.classList.remove('selected'));
+            currentOption.classList.add('selected');
+        }
+    };
+
+    selectTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        customSelect.classList.toggle('open');
+    });
+    
+    window.addEventListener('click', (e) => { 
+        if (!customSelect.contains(e.target)) customSelect.classList.remove('open'); 
+    });
+
+    options.forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const selectedLang = option.getAttribute('data-value');
+            translatePage(selectedLang);
+            customSelect.classList.remove('open');
+        });
+    });
+
+    const savedLang = localStorage.getItem('farmerLanguage') || 'en';
+    translatePage(savedLang);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title data-translate-key="page_title">Krishika - Farmer Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2E7D32"> <!-- Sets the browser/status bar color -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Link to Manifest (Required for "Add to Home Screen") -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            /* Nature-Tech Green Palette */
+            --primary-color: #2E7D32; 
+            --primary-dark: #1B5E20;
+            --primary-light: #81c784;
+            --primary-gradient: linear-gradient(135deg, #43a047, #2e7d32);
+            --accent-color: #FDD835; 
+            
+            --bg-color: #F1F8F1; 
+            --surface-color: #ffffff;
+            --surface-dim: #E8F5E9;
+            
+            --text-main: #1C2e20;
+            --text-light: #607d8b;
+            --white: #ffffff;
+            
+            --shadow-soft: 0 10px 30px rgba(46, 125, 50, 0.08);
+            --shadow-float: 0 15px 35px rgba(0,0,0,0.1);
+            --border-radius: 20px;
+            --transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .app-container { height: 100%; width: 100%; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        
+        .app-main { 
+            flex: 1; 
+            overflow-y: auto; 
+            /* Adjusted bottom padding to match the slimmer nav */
+            padding: 95px 20px 110px 20px; 
+            -ms-overflow-style: none;
+            background: linear-gradient(180deg, var(--bg-color) 0%, #fff 100%);
+        }
+        .app-main::-webkit-scrollbar { display: none; }
+        
+        /* Header */
+        .app-header {
+            position: absolute; top: 0; left: 0; right: 0; z-index: 50;
+            height: 75px; display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(46, 125, 50, 0.05);
+        }
+        
+        .header-title { font-size: 16px; font-weight: 700; letter-spacing: 1.5px; color: var(--primary-color); text-transform: uppercase; }
+        
+        .icon-btn { 
+            width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--white); 
+            color: var(--text-main); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: var(--transition);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .icon-btn:hover { background: var(--surface-dim); color: var(--primary-color); transform: rotate(15deg); }
+        .icon-btn:active { transform: scale(0.95); }
+        
+        .user-avatar-btn { color: var(--primary-color); border: 2px solid var(--white); box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2); overflow: hidden; }
+        .user-avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Welcome Section */
+        .welcome-section { 
+            margin-bottom: 30px; 
+            background: var(--primary-gradient);
+            padding: 25px;
+            border-radius: 25px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(46, 125, 50, 0.25);
+            animation: slideInFade 0.6s ease;
+        }
+        .welcome-section::before {
+            content: ''; position: absolute; top: -20px; right: -20px;
+            width: 120px; height: 120px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; z-index: 0;
+        }
+        .welcome-section::after {
+            content: ''; position: absolute; bottom: -30px; left: 10px;
+            width: 80px; height: 80px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; z-index: 0;
+        }
+        .welcome-content { position: relative; z-index: 1; color: white; }
+        .welcome-sub { font-size: 13px; font-weight: 300; opacity: 0.9; letter-spacing: 0.5px; display: block; margin-bottom: 5px; }
+        .welcome-name { 
+            font-size: 26px; font-weight: 700; margin: 0; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            display: flex; align-items: center; gap: 10px;
+        }
+        .welcome-icon-badge {
+            background: rgba(255,255,255,0.2); width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-size: 14px; color: var(--accent-color);
+        }
+
+        /* Media Picker */
+        .media-picker-group { display: flex; gap: 15px; margin-bottom: 25px; }
+        .media-btn {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+            background: var(--white); padding: 25px 15px; border-radius: 22px;
+            border: 2px dashed #CFD8DC; cursor: pointer; transition: var(--transition);
+            position: relative; overflow: hidden;
+        }
+        .media-btn i { font-size: 28px; color: var(--text-light); transition: var(--transition); z-index: 1; }
+        .media-btn span { font-size: 13px; font-weight: 600; color: var(--text-light); z-index: 1; }
+        
+        .media-btn::after {
+            content: ''; position: absolute; inset: 0; background: var(--surface-dim); 
+            opacity: 0; transition: var(--transition); transform: scale(0.8); border-radius: 22px;
+        }
+        .media-btn:hover { border-color: var(--primary-light); transform: translateY(-3px); }
+        .media-btn:hover::after { opacity: 1; transform: scale(1); }
+        .media-btn:hover i { color: var(--primary-color); transform: scale(1.1); }
+        .media-btn:hover span { color: var(--primary-color); }
+        
+        .media-btn.active { 
+            background: #E8F5E9; border: 2px solid var(--primary-color); 
+            box-shadow: 0 8px 20px rgba(46, 125, 50, 0.15); 
+        }
+        .media-btn.active i, .media-btn.active span { color: var(--primary-dark); font-weight: 700; }
+        
+        .media-file-name { 
+            font-size: 13px; color: var(--primary-dark); text-align: center; margin-bottom: 20px; 
+            font-weight: 600; background: #e8f5e9; padding: 8px 15px; border-radius: 10px; display: inline-block; width: 100%;
+        }
+
+        /* Forms */
+        .card-form { background: var(--white); padding: 5px; border-radius: var(--border-radius); }
+        .section-title { font-size: 16px; margin-bottom: 20px; color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .input-group { margin-bottom: 25px; background: var(--surface-color); }
+        
+        .input-wrapper-smooth {
+            background: #F5F7F6; border-radius: 16px; padding: 12px 18px;
+            display: flex; align-items: center; border: 1px solid transparent; transition: var(--transition);
+        }
+        .input-wrapper-smooth:focus-within { border-color: var(--primary-color); background: #fff; box-shadow: 0 5px 15px rgba(46,125,50,0.1); }
+        
+        .input-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 8px; margin-left: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .custom-input { width: 100%; border: none; background: transparent; padding: 5px; font-size: 15px; font-weight: 500; color: var(--text-main); outline: none; }
+        .input-icon { color: var(--primary-color); margin-right: 12px; font-size: 16px; }
+
+        /* Category Selector */
+        .category-container {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 25px;
+        }
+        .cat-radio { display: none; }
+        .cat-card {
+            background: #F5F7F6; padding: 15px; border-radius: 16px;
+            display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px;
+            cursor: pointer; transition: var(--transition); border: 1px solid transparent;
+        }
+        .cat-card i { font-size: 18px; color: #90A4AE; transition: var(--transition); }
+        .cat-card span { font-size: 13px; font-weight: 600; color: var(--text-light); transition: var(--transition); }
+        
+        .cat-radio:checked + .cat-card {
+            background: #E8F5E9; border-color: var(--primary-color);
+            box-shadow: 0 5px 15px rgba(46, 125, 50, 0.1);
+        }
+        .cat-radio:checked + .cat-card i { color: var(--primary-color); }
+        .cat-radio:checked + .cat-card span { color: var(--primary-dark); }
+
+        /* iPhone Style Temperature Slider */
+        .temp-widget {
+            background: #F5F7F6; padding: 20px; border-radius: 18px; margin-bottom: 25px;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .temp-header { display: flex; justify-content: space-between; align-items: center; }
+        .temp-display { 
+            font-size: 20px; font-weight: 700; color: var(--primary-dark); 
+            background: #fff; padding: 4px 12px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            min-width: 60px; text-align: center;
+        }
+        
+        input[type=range] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; background: transparent; cursor: pointer;
+        }
+        input[type=range]:focus { outline: none; }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 12px; cursor: pointer;
+            background: #CFD8DC; border-radius: 10px; transition: 0.2s;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            height: 28px; width: 28px; border-radius: 50%;
+            background: var(--white); box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            margin-top: -8px; 
+            transition: 0.2s; border: 0.5px solid rgba(0,0,0,0.1);
+        }
+        input[type=range]:active::-webkit-slider-thumb { transform: scale(1.1); box-shadow: 0 4px 12px rgba(46,125,50,0.3); }
+
+        /* Analyze Button */
+        .btn-analyze {
+            width: 100%; padding: 18px; border: none; border-radius: 20px;
+            background: var(--primary-gradient);
+            color: white; font-size: 16px; font-weight: 700; letter-spacing: 0.8px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px;
+            box-shadow: 0 8px 25px rgba(46, 125, 50, 0.4); 
+            position: relative; overflow: hidden; transition: var(--transition);
+        }
+        .btn-analyze::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(45deg) translateX(-150%);
+            transition: 0s;
+        }
+        .btn-analyze:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(46, 125, 50, 0.5); }
+        .btn-analyze:hover::before { animation: shine 1.5s; }
+        .ai-icon { font-size: 18px; animation: pulseTwinkle 2s infinite ease-in-out; color: var(--accent-color); }
+        
+        @keyframes shine { 0% { transform: translateX(-150%) rotate(45deg); } 100% { transform: translateX(150%) rotate(45deg); } }
+        @keyframes pulseTwinkle { 0% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2) rotate(10deg); } 100% { opacity: 0.7; transform: scale(1); } }
+        @keyframes slideInFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Result Box */
+        .result-box-styled {
+            background: linear-gradient(135deg, #E0F2F1, #FFFFFF); 
+            border-left: 6px solid var(--primary-color);
+            padding: 22px; border-radius: 18px; margin-bottom: 25px;
+            box-shadow: var(--shadow-soft); position: relative; animation: slideInFade 0.5s ease;
+        }
+        .result-badge { 
+            position: absolute; top: 22px; right: 20px; background: #FFEBEE; color: #C62828; 
+            font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 6px 12px; border-radius: 30px; 
+        }
+        .result-title { font-size: 18px; color: var(--primary-dark); font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .result-detail { font-size: 14px; color: var(--text-main); line-height: 1.6; }
+        .result-icon-small { color: var(--primary-color); width: 20px; text-align: center; }
+
+        /* Loader */
+        .loader-overlay {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.95); z-index: 20; border-radius: 20px;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+        }
+        .dots-loader { display: flex; gap: 8px; margin-bottom: 15px; }
+        .dot { width: 12px; height: 12px; background: var(--primary-color); border-radius: 50%; animation: bounce 0.6s infinite alternate; }
+        .dot:nth-child(2) { animation-delay: 0.2s; opacity: 0.7; }
+        .dot:nth-child(3) { animation-delay: 0.4s; opacity: 0.5; }
+        @keyframes bounce { to { transform: translateY(-10px); } }
+
+        /* 
+         Bottom Nav
+        */
+        .bottom-nav {
+            position: fixed; 
+            bottom: 0; left: 0; right: 0;
+            width: 100%;
+            height: auto; 
+            background: var(--white);
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            /* Height Reduction here: */
+            padding-top: 8px; 
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.08); 
+            z-index: 200; 
+            border-top-left-radius: 25px; 
+            border-top-right-radius: 25px;
+        }
+
+        .nav-link { 
+            text-decoration: none; color: #90A4AE; display: flex; flex-direction: column; align-items: center; 
+            font-size: 10px; /* Reduced Font Size */
+            font-weight: 600; transition: var(--transition); position: relative; width: 60px;
+        }
+        /* Icon Size Reduced */
+        .nav-link i { font-size: 19px; margin-bottom: 4px; transition: cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.5s; }
+        
+        .nav-link.active { color: var(--primary-color); }
+        /* Active Icon Size Reduced */
+        .nav-link.active i { transform: translateY(-4px); font-size: 21px; filter: drop-shadow(0 6px 12px rgba(46,125,50,0.3)); }
+        .nav-link.active::after {
+            content:''; position: absolute; bottom: -5px; width: 6px; height: 6px; background: var(--primary-color); border-radius: 50%;
+        }
+
+        /* Menu Overlay */
+        .menu-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 90; 
+            opacity: 0; visibility: hidden; transition: var(--transition); 
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+        }
+        .menu-overlay.active { opacity: 1; visibility: visible; }
+        
+        .side-menu {
+            position: fixed; top: 0; left: 0; height: 100%; width: 280px; background: var(--white);
+            z-index: 100; transform: translateX(-100%); transition: var(--transition);
+            display: flex; flex-direction: column; box-shadow: var(--shadow-float); border-top-right-radius: 30px; border-bottom-right-radius: 30px;
+        }
+        .side-menu.active { transform: translateX(0); }
+        
+        .side-menu-header { padding: 40px 30px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 15px; }
+        .app-brand { font-size: 22px; font-weight: 800; color: var(--primary-color); letter-spacing: 0px; }
+
+        .side-menu ul { list-style: none; padding: 25px; overflow-y: auto; }
+        .menu-link-wrapper {
+            display: flex; justify-content: space-between; align-items: center; padding: 16px 20px;
+            border-radius: 16px; cursor: pointer; color: var(--text-main); text-decoration: none; transition: var(--transition); font-weight: 600; margin-bottom: 8px;
+        }
+        .menu-link-wrapper:hover, .menu-item.active .menu-link-wrapper { background: var(--surface-dim); color: var(--primary-color); }
+        
+        .submenu {
+            display: none; background-color: #FAFAFA; margin: 5px 15px 15px 15px; padding: 8px;
+            border-radius: 14px; border: 1px solid #f0f0f0;
+        }
+        .accordion-item.active .submenu { display: block; animation: fadeIn 0.3s ease; }
+        
+        /* New: Language Dropdown in Side Menu - Styles adopted from reference but Green Themed */
+        .custom-select-wrapper { padding: 5px; width: 100%; }
+        .custom-select { position: relative; font-size: 13px; font-weight: 500; }
+        .custom-select-trigger { 
+            display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; 
+            border: 1px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+            background: #fff;
+        }
+        .custom-select-trigger:hover { border-color: var(--primary-color); }
+        .custom-select.open .custom-select-trigger { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1); }
+        .custom-select-trigger .arrow { transition: transform 0.3s ease; font-size: 11px; color: #888; }
+        .custom-select.open .arrow { transform: rotate(180deg); }
+        .custom-options { 
+            position: absolute; top: 105%; left: 0; right: 0; background: var(--white); 
+            border-radius: 10px; border: 1px solid #f0f0f0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            z-index: 200; max-height: 220px; overflow-y: auto; opacity: 0; visibility: hidden; 
+            transform: translateY(-5px); transition: all 0.3s; 
+        }
+        .custom-select.open .custom-options { opacity: 1; visibility: visible; transform: translateY(0); }
+        .custom-option { 
+            display: block; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #fbfbfb;
+            color: var(--text-main); font-size: 13px; transition: 0.2s;
+        }
+        .custom-option:hover, .custom-option.selected { background-color: var(--surface-dim); color: var(--primary-dark); font-weight: 600; padding-left: 20px; }
+
+        .lang-option {
+            display: block; padding: 10px 15px; font-size: 13px; font-weight: 500; color: #546E7A;
+            border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s;
+        }
+        .lang-option:last-child { border-bottom: none; }
+        .lang-option:hover { color: var(--primary-color); padding-left: 20px; }
+        .support-row { padding: 10px 15px; color: #546E7A; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* User Slide with Amazing Background Pattern */
+        .user-slide {
+            position: fixed; top: 0; right: 0; width: 100%; height: 100%;
+            background: #FAFAFA; z-index: 105;
+            transform: translateY(100%); transition: 0.5s cubic-bezier(0.7, 0, 0.3, 1);
+            display: flex; flex-direction: column;
+            overflow: hidden; 
+        }
+        .user-slide.active { transform: translateY(0); }
+        
+        /* 
+         AMAZING HEADER ANIMATION
+        */
+        .bg-pattern { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .header-bg-pattern { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+
+        @keyframes floatMove {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(20px, -20px) rotate(10deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .floating-icon {
+            position: absolute; color: var(--primary-color); opacity: 0.05; font-size: 40px;
+            animation: floatMove 20s ease-in-out infinite;
+        }
+
+        .profile-header {
+            padding: 50px 30px 80px; 
+            background: linear-gradient(180deg, #FFFFFF 0%, #F1F8F1 100%);
+            text-align: center; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px;
+            box-shadow: var(--shadow-soft);
+            position: relative; z-index: 1; overflow: hidden; 
+        }
+        
+        .header-icon {
+            position: absolute; color: var(--primary-color); opacity: 0.08; 
+            animation: floatMove 25s ease-in-out infinite;
+        }
+        
+        /* Icon Positions - Main Slide */
+        .icon-1 { top: 10%; left: 5%; font-size: 80px; animation-duration: 25s; opacity: 0.06; }
+        .icon-2 { top: 60%; right: -5%; font-size: 100px; animation-duration: 28s; animation-delay: -5s; opacity: 0.05; }
+        .icon-3 { bottom: 15%; left: 10%; font-size: 70px; animation-duration: 30s; animation-delay: -10s; opacity: 0.07; }
+        .icon-4 { top: 30%; right: 20%; font-size: 60px; animation-duration: 35s; animation-delay: -2s; opacity: 0.05; }
+        .icon-5 { bottom: 30%; left: 40%; font-size: 50px; animation-duration: 22s; animation-delay: -8s; opacity: 0.04; }
+
+        /* Icon Positions - Header Only */
+        .h-icon-1 { top: -10%; left: -10%; font-size: 90px; opacity: 0.05; }
+        .h-icon-2 { top: 10%; right: -5%; font-size: 60px; animation-delay: -7s; opacity: 0.06; }
+        .h-icon-3 { bottom: 5%; left: 15%; font-size: 40px; animation-delay: -12s; opacity: 0.08; }
+
+        
+        .close-profile {
+            position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.8);
+            width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: var(--text-main); font-size: 18px; cursor: pointer; transition: 0.3s;
+            z-index: 10;
+        }
+        .close-profile:hover { transform: rotate(90deg); background: #fff; }
+        
+        .profile-pic-lg {
+            position: relative; z-index: 5;
+            width: 110px; height: 110px; background: white; border-radius: 50%;
+            margin: 0 auto 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 5px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .profile-pic-lg img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        
+        .profile-info-main { position: relative; z-index: 5; }
+        .profile-info-main h2 { margin: 0; font-size: 24px; color: var(--text-main); }
+        .profile-info-main p { color: var(--white); font-weight: 600; margin-top: 5px; background: var(--primary-color); padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 6px rgba(46, 125, 50, 0.3); }
+
+        /* 
+         Bottom Padding Increased:
+         Ensures Logout button scrolls ABOVE the nav bar
+        */
+        .profile-details-list { padding: 30px 20px 100px 20px; overflow-y: auto; position: relative; z-index: 1; }
+        
+        .detail-item {
+            display: flex; align-items: center; margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.95); /* Slight transparency */
+            padding: 20px; border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            transition: var(--transition); border: 1px solid transparent;
+        }
+        .detail-item:hover { transform: scale(1.02); border-color: rgba(46,125,50,0.1); }
+        .detail-icon {
+            width: 46px; height: 46px; background: #F5F7F6; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center; color: var(--primary-dark);
+            font-size: 18px; margin-right: 18px; flex-shrink: 0;
+        }
+        
+        .btn-logout {
+            margin: 10px 10px 40px; padding: 20px; background: #FFEBEE; color: #D32F2F;
+            border-radius: 20px; font-weight: 700; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        .flash-msg {
+            background: #E8F5E9; color: var(--primary-dark); padding: 15px;
+            border-radius: 14px; margin-bottom: 25px; text-align: center; font-weight: 600; font-size: 14px;
+            border: 1px solid #C8E6C9; box-shadow: 0 4px 15px rgba(46,125,50,0.05); display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <button class="icon-btn" id="menu-btn" aria-label="Open menu" title="Open menu" data-translate-title="open_menu" data-translate-aria-label="open_menu"><i class="fa-solid fa-bars"></i></button>
+            <div class="header-title" data-translate-key="dashboard_title">DASHBOARD</div>
+            
+            <button class="icon-btn user-avatar-btn" id="user-btn" aria-label="Open user profile" title="Open user profile" data-translate-title="open_user_profile" data-translate-aria-label="open_user_profile">
+                {% if user.profile_image %}
+                    <img src="{{ url_for('static', filename='profiles/' + user.profile_image) }}" alt="User">
+                {% else %}
+                    <i class="fa-solid fa-user"></i>
+                {% endif %}
+            </button>
+        </header>
+
+        <div class="app-main">
+            
+            <div class="welcome-section">
+                <div class="welcome-content">
+                    <span class="welcome-sub" data-translate-key="welcome_sub">Good Farming Day,</span>
+                    <h1 class="welcome-name">
+                        <span data-translate-key="hello_farmer" data-username="{{ user.name }}">Farmer {{ user.name }}</span>
+                        <div class="welcome-icon-badge"><i class="fa-solid fa-leaf"></i></div>
+                    </h1>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-msg"><i class="fa-solid fa-circle-check"></i> {{ messages[0] }}</div>
+                {% endif %}
+            {% endwith %}
+
+            {% if result %}
+            <div class="result-box-styled">
+                <span class="result-badge"><i class="fa-regular fa-clock"></i> <span data-translate-key="expires">Expires</span>: {{ result.expiry_prediction }}</span>
+                <h3 class="result-title"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-translate-key="analysis_complete">Analysis Complete!</span></h3>
+                <div class="result-detail">
+                    <div style="margin-bottom:8px;"><i class="fa-solid fa-basket-shopping result-icon-small"></i> <strong data-translate-key="product_label">Product:</strong> {{ result.name }} ({{ result.category }})</div>
+                    <div style="margin-bottom:8px;"><i class="fa-solid fa-clipboard-check result-icon-small"></i> <strong data-translate-key="quality_label">Quality:</strong> {{ result.description }}</div>
+                    <div><i class="fa-solid fa-seedling result-icon-small"></i> <strong data-translate-key="tips_label">Tips:</strong> {{ result.tips }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card-form">
+                
+                <div id="loader" class="loader-overlay">
+                    <div class="dots-loader">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    </div>
+                    <div style="font-weight:600; color:var(--primary-color);" data-translate-key="processing_msg">Processing Crop...</div>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" onsubmit="showLoader()">
+                    <!-- Hidden input to store selected language -->
+                    <input type="hidden" name="language" id="selected-language-input" value="en">
+                    
+                    <h3 class="section-title"><i class="fa-solid fa-camera-retro" style="color:var(--primary-color);"></i> <span data-translate-key="new_scan">New Scan</span></h3>
+
+                    <div class="media-picker-group">
+                        <div class="media-btn" id="camera-btn" role="button">
+                            <i class="fa-solid fa-camera"></i>
+                            <span data-translate-key="btn_capture">Capture</span>
+                        </div>
+                        <div class="media-btn" id="gallery-btn" role="button">
+                            <i class="fa-regular fa-image"></i>
+                            <span data-translate-key="btn_upload">Upload</span>
+                        </div>
+                    </div>
+                    <input type="file" id="img_upload" name="image" accept="image/*" style="display:none;" required>
+                    <span id="file-name-display" style="display:none;" class="media-file-name"></span>
+
+                    <div class="input-group">
+                        <label class="input-label" for="item_name" data-translate-key="crop_name_label">Crop Name</label>
+                        <div class="input-wrapper-smooth">
+                            <i class="fa-solid fa-tag input-icon"></i>
+                            <input type="text" id="item_name" name="name" class="custom-input" placeholder="e.g. Potatoes" data-translate-placeholder="crop_placeholder" required>
+                        </div>
+                    </div>
+
+                    <label class="input-label" data-translate-key="category_label">Category</label>
+                    <div class="category-container">
+                        <label>
+                            <input type="radio" name="category" value="Vegetable" class="cat-radio" checked>
+                            <div class="cat-card">
+                                <i class="fa-solid fa-carrot"></i>
+                                <span data-translate-key="cat_veg">Vegetable</span>
+                            </div>
+                        </label>
+                        <label>
+                            <input type="radio" name="category" value="Fruit" class="cat-radio">
+                            <div class="cat-card">
+                                <i class="fa-solid fa-apple-whole"></i>
+                                <span data-translate-key="cat_fruit">Fruit</span>
+                            </div>
+                        </label>
+                        <label>
+                            <input type="radio" name="category" value="Grain" class="cat-radio">
+                            <div class="cat-card">
+                                <i class="fa-solid fa-wheat-awn"></i>
+                                <span data-translate-key="cat_grain">Grain</span>
+                            </div>
+                        </label>
+                        <label>
+                            <input type="radio" name="category" value="Dairy" class="cat-radio">
+                            <div class="cat-card">
+                                <i class="fa-solid fa-cow"></i>
+                                <span data-translate-key="cat_dairy">Dairy</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="pick_time" data-translate-key="pick_date_label">Picking Date</label>
+                        <div class="input-wrapper-smooth">
+                            <i class="fa-regular fa-calendar-days input-icon"></i>
+                            <input type="datetime-local" id="pick_time" name="pick_time" class="custom-input" required>
+                        </div>
+                    </div>
+
+                    <div class="temp-widget">
+                        <div class="temp-header">
+                            <label for="temp-slider" class="input-label" style="margin:0;"><i class="fa-solid fa-temperature-three-quarters"></i> <span data-translate-key="temp_label">Temperature (°C)</span></label>
+                            <div id="temp-display" class="temp-display">25</div>
+                        </div>
+                        <input type="range" id="temp-slider" min="0" max="50" value="25" step="1" oninput="updateTemp(this.value)" aria-label="Temperature Adjustment Slider">
+                        <input type="number" id="temp-real-input" name="temp" value="25" style="display:none;">
+                    </div>
+
+                    <button type="submit" class="btn-analyze">
+                        <i class="fa-solid fa-wand-magic-sparkles ai-icon"></i> <span data-translate-key="analyze_btn">Analyze Shelf-Life</span>
+                    </button>
+                </form>
+            </div>
+            
+        </div> 
+
+        <nav class="bottom-nav">
+            <a href="/farmer/dashboard" class="nav-link active">
+                <i class="fa-solid fa-house-chimney"></i>
+                <span data-translate-key="nav_home">Home</span>
+            </a>
+            <a href="/farmer/videos" class="nav-link">
+                <i class="fa-solid fa-play-circle"></i>
+                <span data-translate-key="nav_videos">Videos</span>
+            </a>
+        </nav>
+
+    </div> 
+
+    <div class="menu-overlay" id="menu-overlay"></div>
+    <div class="side-menu" id="side-menu">
+        <div class="side-menu-header">
+            <img src="{{ url_for('static', filename='logo.png') }}" 
+                 onerror="this.style.display='none'; document.querySelector('.app-logo-fallback').style.display='block';" 
+                 alt="Logo" class="app-logo" style="height:40px; width:auto;">
+            <i class="fa-solid fa-leaf app-logo-fallback" style="font-size:30px; color:var(--primary-color); display:none;"></i>
+            <div class="app-brand" style="margin-left:10px;">KRISHIKA</div>
+        </div>
+        <ul>
+            <li class="menu-item">
+                <a href="/farmer/list" class="menu-link-wrapper">
+                    <span><i class="fa-solid fa-list menu-icon-left" style="margin-right:15px; width:20px; color:var(--primary-color);"></i> <span data-translate-key="menu_my_crops">My Crops</span></span>
+                    <i class="fa-solid fa-chevron-right" style="font-size:12px; color:#ddd;"></i>
+                </a>
+            </li>
+
+            <li class="menu-item accordion-item">
+                <div class="menu-link-wrapper">
+                    <span><i class="fa-solid fa-earth-americas menu-icon-left" style="margin-right:15px; width:20px; color:var(--primary-color);"></i> <span data-translate-key="menu_language">Language</span></span>
+                    <i class="fa-solid fa-chevron-down" style="font-size:12px;"></i>
+                </div>
+                <div class="submenu">
+                    <!-- New Custom Language Dropdown to replace simple list -->
+                    <div class="custom-select-wrapper">
+                        <div class="custom-select">
+                            <div class="custom-select-trigger">
+                                <span>English</span>
+                                <i class="fa-solid fa-chevron-down arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <span class="custom-option" data-value="en">English</span>
+                                <span class="custom-option" data-value="as">অসমীয়া (Assamese)</span>
+                                <span class="custom-option" data-value="bn">বাংলা (Bengali)</span>
+                                <span class="custom-option" data-value="brx">बोड़ो (Bodo)</span>
+                                <span class="custom-option" data-value="doi">डोगरी (Dogri)</span>
+                                <span class="custom-option" data-value="gu">ગુજરાતી (Gujarati)</span>
+                                <span class="custom-option" data-value="hi">हिन्दी (Hindi)</span>
+                                <span class="custom-option" data-value="kn">ಕನ್ನಡ (Kannada)</span>
+                                <span class="custom-option" data-value="ks">کٲشُر (Kashmiri)</span>
+                                <span class="custom-option" data-value="kok">कोंकणी (Konkani)</span>
+                                <span class="custom-option" data-value="mai">मैथिली (Maithili)</span>
+                                <span class="custom-option" data-value="ml">മലയാളം (Malayalam)</span>
+                                <span class="custom-option" data-value="mni">মৈতৈলোন্ (Manipuri)</span>
+                                <span class="custom-option" data-value="mr">मराठी (Marathi)</span>
+                                <span class="custom-option" data-value="ne">नेपाली (Nepali)</span>
+                                <span class="custom-option" data-value="or">ଓଡ଼ିଆ (Odia)</span>
+                                <span class="custom-option" data-value="pa">ਪੰਜਾਬੀ (Punjabi)</span>
+                                <span class="custom-option" data-value="sa">संस्कृतम् (Sanskrit)</span>
+                                <span class="custom-option" data-value="sat">ᱥᱟᱱᱛᱟᱲᱤ (Santali)</span>
+                                <span class="custom-option" data-value="sd">सिंधी (Sindhi)</span>
+                                <span class="custom-option" data-value="ta">தமிழ் (Tamil)</span>
+                                <span class="custom-option" data-value="te">తెలుగు (Telugu)</span>
+                                <span class="custom-option" data-value="ur">اردو (Urdu)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            <li class="menu-item accordion-item">
+                <div class="menu-link-wrapper">
+                    <span><i class="fa-solid fa-headset menu-icon-left" style="margin-right:15px; width:20px; color:var(--primary-color);"></i> <span data-translate-key="menu_support">Support</span></span>
+                    <i class="fa-solid fa-chevron-down" style="font-size:12px;"></i>
+                </div>
+                <div class="submenu">
+                    <div class="support-row"><i class="fa-solid fa-envelope"></i> support@krishika.com</div>
+                    <div class="support-row"><i class="fa-solid fa-phone"></i> 1800-KISAN-HELP</div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="user-slide" id="user-slide">
+        <!-- BACKGROUND PATTERN (Main Body) -->
+        <div class="bg-pattern">
+            <i class="fa-solid fa-wheat-awn floating-icon icon-1"></i>
+            <i class="fa-solid fa-leaf floating-icon icon-2"></i>
+            <i class="fa-solid fa-carrot floating-icon icon-3"></i>
+            <i class="fa-solid fa-tractor floating-icon icon-4"></i>
+            <i class="fa-solid fa-seedling floating-icon icon-5"></i>
+        </div>
+
+        <!-- PROFILE HEADER (With Amazing Animated Effect) -->
+        <div class="profile-header">
+            <!-- Specific Header Background Pattern -->
+            <div class="header-bg-pattern">
+                <i class="fa-solid fa-cloud-sun header-icon h-icon-1"></i>
+                <i class="fa-solid fa-spa header-icon h-icon-2"></i>
+                <i class="fa-solid fa-seedling header-icon h-icon-3"></i>
+            </div>
+
+            <div class="close-profile" id="close-user-slide" role="button" aria-label="Close profile"><i class="fa-solid fa-xmark"></i></div>
+            
+            <div class="profile-pic-lg">
+                {% if user.profile_image %}
+                    <img src="{{ url_for('static', filename='profiles/' + user.profile_image) }}" alt="Profile Photo">
+                {% else %}
+                    <i class="fa-solid fa-user" style="font-size:40px; color:#CFD8DC;"></i>
+                {% endif %}
+            </div>
+            
+            <div class="profile-info-main">
+                <h2>{{ user.name }}</h2>
+                <p>Verified Farmer</p>
+            </div>
+        </div>
+
+        <div class="profile-details-list">
+            <div class="detail-item">
+                <div class="detail-icon"><i class="fa-solid fa-envelope"></i></div>
+                <div class="detail-content">
+                    <strong style="color:var(--text-light); font-size:11px; text-transform:uppercase;">Email</strong>
+                    <span style="font-weight:600; color:var(--text-main);">{{ user.email }}</span>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon"><i class="fa-brands fa-whatsapp"></i></div>
+                <div class="detail-content">
+                    <strong style="color:var(--text-light); font-size:11px; text-transform:uppercase;">Mobile / WhatsApp</strong>
+                    <span style="font-weight:600; color:var(--text-main);">{{ user.phone if user.phone else 'N/A' }}</span>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon"><i class="fa-solid fa-map-pin"></i></div>
+                <div class="detail-content">
+                    <strong style="color:var(--text-light); font-size:11px; text-transform:uppercase;" data-translate-key="label_location">Location</strong>
+                    <span style="font-weight:600; color:var(--text-main);">
+                        {{ user.village if user.village else 'Location Not Set' }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon"><i class="fa-solid fa-map"></i></div>
+                <div class="detail-content">
+                    <strong style="color:var(--text-light); font-size:11px; text-transform:uppercase;">State</strong>
+                    <span style="font-weight:600; color:var(--text-main);">
+                        {{ user.state if user.state else 'N/A' }}
+                    </span>
+                </div>
+            </div>
+            
+            <a href="/logout" class="btn-logout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> <span data-translate-key="logout_btn">Sign Out</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const menuBtn = document.getElementById('menu-btn');
+        const sideMenu = document.getElementById('side-menu');
+        const overlay = document.getElementById('menu-overlay');
+
+        function toggleMenu() {
+            sideMenu.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        menuBtn.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', () => {
+            sideMenu.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+
+        const userBtn = document.getElementById('user-btn');
+        const userSlide = document.getElementById('user-slide');
+        const closeUserBtn = document.getElementById('close-user-slide');
+
+        userBtn.addEventListener('click', () => {
+            userSlide.classList.add('active');
+        });
+        closeUserBtn.addEventListener('click', () => {
+            userSlide.classList.remove('active');
+        });
+
+        document.querySelectorAll('.accordion-item > .menu-link-wrapper').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const parent = item.parentElement;
+                parent.classList.toggle('active');
+                document.querySelectorAll('.accordion-item').forEach(other => {
+                    if (other !== parent) other.classList.remove('active');
+                });
+            });
+        });
+
+        const fileInput = document.getElementById('img_upload');
+        const camBtn = document.getElementById('camera-btn');
+        const gallBtn = document.getElementById('gallery-btn');
+        const fileNameDisp = document.getElementById('file-name-display');
+
+        camBtn.addEventListener('click', () => {
+            fileInput.removeAttribute('multiple');
+            fileInput.setAttribute('capture', 'environment');
+            fileInput.click();
+            updateActiveState(camBtn);
+        });
+
+        gallBtn.addEventListener('click', () => {
+            fileInput.removeAttribute('capture');
+            fileInput.click();
+            updateActiveState(gallBtn);
+        });
+
+        fileInput.addEventListener('change', () => {
+            if(fileInput.files.length > 0) {
+                fileNameDisp.style.display = 'block';
+                fileNameDisp.innerHTML = `<i class="fa-solid fa-check"></i> Selected: ${fileInput.files[0].name}`;
+            }
+        });
+
+        function updateActiveState(btn) {
+            document.querySelectorAll('.media-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('pick_time');
+            if (dateInput) {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                dateInput.value = now.toISOString().slice(0, 16);
+            }
+        });
+
+        function updateTemp(val) {
+            document.getElementById('temp-display').textContent = val;
+            document.getElementById('temp-real-input').value = val;
+        }
+
+        function showLoader() {
+            document.getElementById('loader').style.display = 'flex';
+        }
+
+        /* 
+           ===========================================================
+           FULL LANGUAGE TRANSLATION LOGIC (Ref: Krishika Context)
+           ===========================================================
+        */
+        const translations = {
+            'en': { page_title: 'Krishika - Farmer Dashboard', dashboard_title: 'DASHBOARD', welcome_sub: 'Good Farming Day,', hello_farmer: 'Farmer {userName}', new_scan: 'New Scan', btn_capture: 'Capture', btn_upload: 'Upload', crop_name_label: 'Crop Name', crop_placeholder: 'e.g. Potatoes', category_label: 'Category', cat_veg: 'Vegetable', cat_fruit: 'Fruit', cat_grain: 'Grain', cat_dairy: 'Dairy', pick_date_label: 'Picking Date', temp_label: 'Temperature (°C)', analyze_btn: 'Analyze Shelf-Life', nav_home: 'Home', nav_videos: 'Videos', menu_my_crops: 'My Crops', menu_language: 'Language', menu_support: 'Support', open_menu: 'Open menu', open_user_profile: 'Open user profile', expires: 'Expires', analysis_complete: 'Analysis Complete!', product_label: 'Product', quality_label: 'Quality', tips_label: 'Tips', processing_msg: 'Processing Crop...', label_location: 'Location', logout_btn: 'Sign Out' },
+            'hi': { page_title: 'कृषिका - किसान डैशबोर्ड', dashboard_title: 'डैशबोर्ड', welcome_sub: 'शुभ कृषि दिवस,', hello_farmer: 'किसान {userName}', new_scan: 'नया स्कैन', btn_capture: 'कैमरा', btn_upload: 'अपलोड', crop_name_label: 'फसल का नाम', crop_placeholder: 'जैसे, आलू', category_label: 'श्रेणी', cat_veg: 'सब्जी', cat_fruit: 'फल', cat_grain: 'अनाज', cat_dairy: 'डेयरी', pick_date_label: 'तोड़ने की तारीख', temp_label: 'तापमान (°C)', analyze_btn: 'शेल्फ-लाइफ विश्लेषण', nav_home: 'होम', nav_videos: 'वीडियो', menu_my_crops: 'मेरी फसलें', menu_language: 'भाषा', menu_support: 'समर्थन', open_menu: 'मेनू खोलें', open_user_profile: 'प्रोफाइल खोलें', expires: 'समाप्ति', analysis_complete: 'विश्लेषण पूर्ण!', product_label: 'उत्पाद', quality_label: 'गुणवत्ता', tips_label: 'सुझाव', processing_msg: 'प्रसंस्करण हो रहा है...', label_location: 'स्थान', logout_btn: 'साइन आउट' },
+            'mr': { page_title: 'कृषिका - शेतकरी डॅशबोर्ड', dashboard_title: 'डॅशबोर्ड', welcome_sub: 'शुभ कृषी दिन,', hello_farmer: 'शेतकरी {userName}', new_scan: 'नवीन स्कॅन', btn_capture: 'फोटो घ्या', btn_upload: 'अपलोड करा', crop_name_label: 'पिकाचे नाव', crop_placeholder: 'उदा. बटाटे', category_label: 'श्रेणी', cat_veg: 'भाजी', cat_fruit: 'फळ', cat_grain: 'धान्य', cat_dairy: 'दुग्धशाळा', pick_date_label: 'तोडणीची तारीख', temp_label: 'तापमान (°C)', analyze_btn: 'शेल्फ-लाइफ तपासा', nav_home: 'होम', nav_videos: 'व्हिडिओ', menu_my_crops: 'माझी पिके', menu_language: 'भाषा', menu_support: 'मदत', open_menu: 'मेनू उघडा', open_user_profile: 'प्रोफाइल उघडा', expires: 'कालबाह्य', analysis_complete: 'विश्लेषण पूर्ण!', product_label: 'उत्पादन', quality_label: 'गुणवत्ता', tips_label: 'टिपा', processing_msg: 'प्रक्रिया सुरू आहे...', label_location: 'स्थान', logout_btn: 'बाहेर पडा' },
+            'gu': { page_title: 'કૃષિકા - ખેડૂત ડેશબોર્ડ', dashboard_title: 'ડેશબોર્ડ', welcome_sub: 'શુભ કૃષિ દિવસ,', hello_farmer: 'ખેડૂત {userName}', new_scan: 'નવું સ્કેન', btn_capture: 'કેપ્ચર', btn_upload: 'અપલોડ', crop_name_label: 'પાકનું નામ', crop_placeholder: 'દા.ત. બટાકા', category_label: 'શ્રેણી', cat_veg: 'શાકભાજી', cat_fruit: 'ફળ', cat_grain: 'અનાજ', cat_dairy: 'ડેરી', pick_date_label: 'તોડવાની તારીખ', temp_label: 'તાપમાન (°C)', analyze_btn: 'શેલ્ફ-લાઇફ વિશ્લેષણ', nav_home: 'હોમ', nav_videos: 'વિડિઓ', menu_my_crops: 'મારા પાક', menu_language: 'ભાષા', menu_support: 'આધાર', open_menu: 'મેનુ ખોલો', open_user_profile: 'પ્રોફાઇલ ખોલો', expires: 'સમાપ્તિ', analysis_complete: 'વિશ્લેષણ પૂર્ણ!', product_label: 'ઉત્પાદન', quality_label: 'ગુણવત્તા', tips_label: 'ટિપ્સ', processing_msg: 'પ્રક્રિયા ચાલુ છે...', label_location: 'સ્થાન', logout_btn: 'સાઇન આઉટ' },
+            'bn': { page_title: 'কৃষিকা - কৃষক ড্যাশবোর্ড', dashboard_title: 'ড্যাশবোর্ড', welcome_sub: 'শুভ কৃষি দিন,', hello_farmer: 'কৃষক {userName}', new_scan: 'নতুন স্ক্যান', btn_capture: 'ক্যাপচার', btn_upload: 'আপলোড', crop_name_label: 'ফসলের নাম', crop_placeholder: 'যেমন আলু', category_label: 'বিভাগ', cat_veg: 'সবজি', cat_fruit: 'ফল', cat_grain: 'শস্য', cat_dairy: 'দুগ্ধজাত', pick_date_label: 'তোলার তারিখ', temp_label: 'তাপমাত্রা (°C)', analyze_btn: 'সেলফ-লাইফ বিশ্লেষণ', nav_home: 'হোম', nav_videos: 'ভিডিও', menu_my_crops: 'আমার ফসল', menu_language: 'भाषा', menu_support: 'সহায়তা', open_menu: 'মেনু খুলুন', open_user_profile: 'প্রোফাইল খুলুন', expires: 'মেয়াদ', analysis_complete: 'বিশ্লেষণ সম্পূর্ণ!', product_label: 'পণ্য', quality_label: 'গুণমান', tips_label: 'পরামর্শ', processing_msg: 'প্রক্রিয়াধীন...', label_location: 'অবস্থান', logout_btn: 'সাইন আউট' },
+            'pa': { page_title: 'ਕ੍ਰਿਸ਼ਿਕਾ - ਕਿਸਾਨ ਡੈਸ਼ਬੋਰਡ', dashboard_title: 'ਡੈਸ਼ਬੋਰਡ', welcome_sub: 'ਚੰਗਾ ਖੇਤੀ ਦਿਨ,', hello_farmer: 'ਕਿਸਾਨ {userName}', new_scan: 'ਨਵਾਂ ਸਕੈਨ', btn_capture: 'ਕੈਪਚਰ', btn_upload: 'ਅਪਲੋਡ', crop_name_label: 'ਫਸਲ ਦਾ ਨਾਮ', crop_placeholder: 'ਜਿਵੇਂ ਆਲੂ', category_label: 'ਸ਼੍ਰੇਣੀ', cat_veg: 'ਸਬਜ਼ੀ', cat_fruit: 'ਫਲ', cat_grain: 'ਅਨਾਜ', cat_dairy: 'ਡੇਅਰੀ', pick_date_label: 'ਚੁੱਕਣ ਦੀ ਮਿਤੀ', temp_label: 'ਤਾਪਮਾਨ (°C)', analyze_btn: 'ਸ਼ੈਲਫ-ਲਾਈਫ ਵਿਸ਼ਲੇਸ਼ਣ', nav_home: 'ਹੋਮ', nav_videos: 'ਵੀਡੀਓ', menu_my_crops: 'ਮੇਰੀ ਫਸਲ', menu_language: 'ਭਾਸ਼ਾ', menu_support: 'ਸਹਾਇਤਾ', open_menu: 'ਮੀਨੂ ਖੋਲ੍ਹੋ', open_user_profile: 'ਪ੍ਰੋਫਾਈਲ ਖੋਲ੍ਹੋ', expires: 'ਮਿਆਦ', analysis_complete: 'ਵਿਸ਼ਲੇਸ਼ਣ ਪੂਰਾ!', product_label: 'ਉਤਪਾਦ', quality_label: 'ਗੁਣਵੱਤਾ', tips_label: 'ਸੁਝਾਅ', processing_msg: 'ਕਾਰਵਾਈ ਜਾਰੀ...', label_location: 'ਸਥਾਨ', logout_btn: 'ਸਾਈਨ ਆਉਟ' },
+            'te': { page_title: 'కృషిక - రైతు డాష్‌బోర్డ్', dashboard_title: 'డాష్‌బోర్డ్', welcome_sub: 'శుభ వ్యవసాయ దినం,', hello_farmer: 'రైతు {userName}', new_scan: 'కొత్త స్కాన్', btn_capture: 'క్యాప్చర్', btn_upload: 'అప్‌లోడ్', crop_name_label: 'పంట పేరు', crop_placeholder: 'ఉదా. బంగాళదుంపలు', category_label: 'వర్గం', cat_veg: 'కూరగాయ', cat_fruit: 'పండు', cat_grain: 'ధాన్యం', cat_dairy: 'పాడి', pick_date_label: 'కోత తేదీ', temp_label: 'ఉష్ణోగ్రత (°C)', analyze_btn: 'నిల్వ సామర్థ్యం విశ్లేషణ', nav_home: 'హోమ్', nav_videos: 'వీడియోలు', menu_my_crops: 'నా పంటలు', menu_language: 'భాష', menu_support: 'సహాయం', open_menu: 'మెను తెరవండి', open_user_profile: 'ప్రొఫైల్ తెరవండి', expires: 'గడువు', analysis_complete: 'విశ్లేషణ పూర్తయింది!', product_label: 'ఉత్పత్తి', quality_label: 'నాణ్యత', tips_label: 'చిట్కాలు', processing_msg: 'ప్రాసెసింగ్...', label_location: 'నగరము', logout_btn: 'సైన్ అవుట్' },
+            'ta': { page_title: 'கிரிஷிகா - விவசாயி டாஷ்போர்டு', dashboard_title: 'டாஷ்போர்டு', welcome_sub: 'இனிய விவசாய நாள்,', hello_farmer: 'விவசாயி {userName}', new_scan: 'புதிய ஸ்கேன்', btn_capture: 'பிடிப்பு', btn_upload: 'பதிவேற்றம்', crop_name_label: 'பயிர் பெயர்', crop_placeholder: 'எ.கா. உருளைக்கிழங்கு', category_label: 'வகை', cat_veg: 'காய்கறி', cat_fruit: 'பழம்', cat_grain: 'தானியம்', cat_dairy: 'பால்பண்ணை', pick_date_label: 'பறிக்கும் தேதி', temp_label: 'வெப்பநிலை (°C)', analyze_btn: 'ஆயுட்காலம் ஆய்வு', nav_home: 'முகப்பு', nav_videos: 'வீடியோ', menu_my_crops: 'எனது பயிர்கள்', menu_language: 'மொழி', menu_support: 'ஆதரவு', open_menu: 'மெனுவைத் திற', open_user_profile: 'சுயவிவரத்தைத் திற', expires: 'காலாவதி', analysis_complete: 'பகுப்பாய்வு முடிந்தது!', product_label: 'தயாரிப்பு', quality_label: 'தரம்', tips_label: 'குறிப்புகள்', processing_msg: 'செயலாக்க...', label_location: 'இடம்', logout_btn: 'வெளியேறு' },
+            'ml': { page_title: 'കൃഷിക - കർഷക ഡാഷ്ബോർഡ്', dashboard_title: 'ഡാഷ്‌ബോർഡ്', welcome_sub: 'നല്ല കാർഷിക ദിനം,', hello_farmer: 'കർഷകൻ {userName}', new_scan: 'പുതിയ സ്കാൻ', btn_capture: 'ക്യാപ്ചർ', btn_upload: 'അപ്‌ലോഡ്', crop_name_label: 'വിളയുടെ പേര്', crop_placeholder: 'ഉദാഹരണത്തിന് ഉരുളക്കിഴങ്ങ്', category_label: 'വിഭാഗം', cat_veg: 'പച്ചക്കറി', cat_fruit: 'പഴം', cat_grain: 'ധാന്യം', cat_dairy: 'ക്ഷീര', pick_date_label: 'വിളവെടുപ്പ് തീയതി', temp_label: 'താപനില (°C)', analyze_btn: 'ഷെൽഫ്-ലൈഫ് വിശകലനം', nav_home: 'ഹോം', nav_videos: 'വീഡിയോ', menu_my_crops: 'എന്റെ വിളകൾ', menu_language: 'ഭാഷ', menu_support: 'പിന്തുണ', open_menu: 'മെനു തുറക്കുക', open_user_profile: 'പ്രൊഫൈൽ തുറക്കുക', expires: 'കാലാവധി', analysis_complete: 'വിശകലനം പൂർത്തിയായി!', product_label: 'ഉൽപ്പന്നം', quality_label: 'ഗുണനിലവാരം', tips_label: 'നുറുങ്ങുകൾ', processing_msg: 'പ്രോസസ്സിംഗ്...', label_location: 'സ്ഥലം', logout_btn: 'സൈൻ ഔട്ട്' },
+            'kn': { page_title: 'ಕೃಷಿಕಾ - ರೈತ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', dashboard_title: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', welcome_sub: 'ಶುಭ ಕೃಷಿ ದಿನ,', hello_farmer: 'ರೈತ {userName}', new_scan: 'ಹೊಸ ಸ್ಕ್ಯಾನ್', btn_capture: 'ಸೆರೆಹಿಡಿಯಿರಿ', btn_upload: 'ಅಪ್‌ಲೋಡ್ ಮಾಡಿ', crop_name_label: 'ಬೆಳೆಯ ಹೆಸರು', crop_placeholder: 'ಉದಾ. ಆಲೂಗಡ್ಡೆ', category_label: 'ವರ್ಗ', cat_veg: 'ತರಕಾರಿ', cat_fruit: 'ಹಣ್ಣು', cat_grain: 'ಧಾನ್ಯ', cat_dairy: 'ಡೈರಿ', pick_date_label: 'ಕಟಾವು ದಿನಾಂಕ', temp_label: 'ತಾಪಮಾನ (°C)', analyze_btn: 'ಶೆಲ್ಫ್-ಲೈಫ್ ವಿಶ್ಲೇಷಣೆ', nav_home: 'ಹೋಮ್', nav_videos: 'ವೀಡಿಯೊ', menu_my_crops: 'ನನ್ನ ಬೆಳೆಗಳು', menu_language: 'ಭಾಷೆ', menu_support: 'ಬೆಂಬಲ', open_menu: 'ಮೆನು ತೆರೆಯಿರಿ', open_user_profile: 'ಪ್ರೊಫೈಲ್ ತೆರೆಯಿರಿ', expires: 'ಅವಧಿ', analysis_complete: 'ವಿಶ್ಲೇಷಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ!', product_label: 'ಉತ್ಪನ್ನ', quality_label: 'ಗುಣಮಟ್ಟ', tips_label: 'ಸಲಹೆಗಳು', processing_msg: 'ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುತ್ತಿದೆ...', label_location: 'ಸ್ಥಳ', logout_btn: 'ಸೈನ್ ಔಟ್' },
+            'ur': { page_title: 'کرشیکا - کسان ڈیش بورڈ', dashboard_title: 'ڈیش بورڈ', welcome_sub: 'اچھا کھیتی کا دن،', hello_farmer: 'کسان {userName}', new_scan: 'نیا اسکین', btn_capture: 'تصویر لیں', btn_upload: 'اپ لوڈ کریں', crop_name_label: 'فصل کا نام', crop_placeholder: 'مثلاً آلو', category_label: 'زمرہ', cat_veg: 'سبزی', cat_fruit: 'پھل', cat_grain: 'اناج', cat_dairy: 'ڈیری', pick_date_label: 'چننے کی تاریخ', temp_label: 'درجہ حرارت (°C)', analyze_btn: 'شیلف لائف کا تجزیہ', nav_home: 'ہوم', nav_videos: 'ویڈیوز', menu_my_crops: 'میری فصلیں', menu_language: 'زبان', menu_support: 'سپورٹ', open_menu: 'مینو کھولیں', open_user_profile: 'پروفائل کھولیں', expires: 'میعاد', analysis_complete: 'تجزیہ مکمل!', product_label: 'پروڈکٹ', quality_label: 'معیار', tips_label: 'تجاویز', processing_msg: 'پروسیسنگ...', label_location: 'مقام', logout_btn: 'سائن آؤٹ' },
+            'or': { page_title: 'କୃଷିକା - କୃଷକ ଡ୍ୟାଶବୋର୍ଡ', dashboard_title: 'ଡ୍ୟାଶବୋର୍ଡ', welcome_sub: 'ଶୁଭ କୃଷି ଦିବସ,', hello_farmer: 'କୃଷକ {userName}', new_scan: 'ନୂତନ ସ୍କାନ୍', btn_capture: 'ଫଟୋ ନିଅ', btn_upload: 'ଅପଲୋଡ୍ କର', crop_name_label: 'ଫସଲ ନାମ', crop_placeholder: 'ଯଥା ଆଳୁ', category_label: 'ବିଭାଗ', cat_veg: 'ପରିବା', cat_fruit: 'ଫଳ', cat_grain: 'ଶସ୍ୟ', cat_dairy: 'ଡେ|}{\ରୀ', pick_date_label: 'ତୋଳିବା ତାରିଖ', temp_label: 'ତାପମାତ୍ରା (°C)', analyze_btn: 'ସେଲ୍ଫ-ଲାଇଫ୍ ବିଶ୍ଳେଷଣ', nav_home: 'ହୋମ୍', nav_videos: 'ଭିଡିଓ', menu_my_crops: 'ମୋର ଫସଲ', menu_language: 'ଭାଷା', menu_support: 'ସମର୍ଥନ', open_menu: 'ମେନୁ ଖୋଲ', open_user_profile: 'ପ୍ରୋଫାଇଲ୍ ଖୋଲ', expires: 'ସମାପ୍ତି', analysis_complete: 'ବିଶ୍ଳେଷଣ ସମ୍ପୂର୍ଣ୍ଣ!', product_label: 'ଉତ୍ପାଦ', quality_label: 'ଗୁଣବତ୍ତା', tips_label: 'ପରାମର୍ଶ', processing_msg: 'ପ୍ରକ୍ରିୟାକରଣ ଚାଲିଛି...', label_location: 'ସ୍ଥାନ', logout_btn: 'ସାଇନ୍ ଆଉଟ୍' },
+            'as': { page_title: 'কৃষিকা - কৃষক ডেশ্বৰ্ড', dashboard_title: 'ডেশ্বৰ্ড', welcome_sub: 'শুভ কৃষি দিৱস,', hello_farmer: 'কৃষক {userName}', new_scan: 'নতুন স্কেন', btn_capture: 'কেপচাৰ', btn_upload: 'আপলোড', crop_name_label: 'শস্যৰ নাম', crop_placeholder: 'যেনে আলু', category_label: 'শ্ৰেণী', cat_veg: 'শাক-পাচলি', cat_fruit: 'ফল', cat_grain: 'শস্য', cat_dairy: 'ডেইৰী', pick_date_label: 'তোলাৰ তাৰিখ', temp_label: 'উষ্ণতা (°C)', analyze_btn: 'শেল্ফ-লাইফ বিশ্লেষণ', nav_home: 'হোম', nav_videos: 'ভিডিঅ’', menu_my_crops: 'মোৰ শস্য', menu_language: 'ভাষা', menu_support: 'সহায়', open_menu: 'মেনু খোলক', open_user_profile: 'প্ৰফাইল খোলক', expires: 'ম্যাদ', analysis_complete: 'বিশ্লেষণ সম্পূৰ্ণ!', product_label: 'সামগ্ৰী', quality_label: 'গুণমান', tips_label: 'পৰামৰ্শ', processing_msg: 'প্ৰক্ৰিয়া চলি আছে...', label_location: 'স্থান', logout_btn: 'ছাইন আউট' },
+            'mni': { page_title: 'কৃশিকা - লৌমী দেশবোর্দ', dashboard_title: 'দেশবোর্দ', welcome_sub: 'নৌবা লৌমীগী নুমিৎ,', hello_farmer: 'লৌমী {userName}', new_scan: 'অনৌবা স্কেন', btn_capture: 'লৌবিয়ু', btn_upload: 'হাপকৎপিয়ু', crop_name_label: 'মহৈ মরোং মমিং', crop_placeholder: 'খুদম, আলু', category_label: 'মখল', cat_veg: 'মনা-মসিং', cat_fruit: 'উহৈ', cat_grain: 'মরু-মরাং', cat_dairy: 'শঙ্গোম', pick_date_label: 'লৌথোকপগী তাং', temp_label: 'অইং-অশা (°C)', analyze_btn: 'শেলফ-লাইফ থিজিনবা', nav_home: 'য়ুম', nav_videos: 'ভিদিও', menu_my_crops: 'ঐগী মহৈ মরোং', menu_language: 'লোল', menu_support: 'মতেং', open_menu: 'মেনু হাংদোকউ', open_user_profile: 'প্রোফাইল হাংদোকউ', expires: 'লোইবা', analysis_complete: 'থিজিনবা লোইরে!', product_label: 'পোৎথোক', quality_label: 'মগুন', tips_label: 'পাউতাক', processing_msg: 'প্রোসেস তৌরি...', label_location: 'মফম', logout_btn: 'থোক্লকপা' },
+            'ne': { page_title: 'कृषिका - किसान ड्यासबोर्ड', dashboard_title: 'ड्यासबोर्ड', welcome_sub: 'शुभ कृषि दिवस,', hello_farmer: 'किसान {userName}', new_scan: 'नयाँ स्क्यान', btn_capture: 'क्याप्चर', btn_upload: 'अपलोड', crop_name_label: 'बालीको नाम', crop_placeholder: 'उदाहरण आलु', category_label: 'श्रेणी', cat_veg: 'तरकारी', cat_fruit: 'फलफूल', cat_grain: 'अन्न', cat_dairy: 'डेरी', pick_date_label: 'टिप्ने मिति', temp_label: 'तापक्रम (°C)', analyze_btn: 'सेल्फ-लाइफ विश्लेषण', nav_home: 'गृहपृष्ठ', nav_videos: 'भिडियो', menu_my_crops: 'मेरो बाली', menu_language: 'भाषा', menu_support: 'सहयोग', open_menu: 'मेनु खोल्नुहोस्', open_user_profile: 'प्रोफाइल खोल्नुहोस्', expires: 'म्याद', analysis_complete: 'विश्लेषण पूरा भयो!', product_label: 'उत्पादन', quality_label: 'गुणस्तर', tips_label: 'सुझाव', processing_msg: 'प्रक्रिया जारी...', label_location: 'स्थान', logout_btn: 'साइन आउट' },
+            'sa': { page_title: 'कृषिका - कृषक उपकरणपटलम्', dashboard_title: 'उपकरणपटलम्', welcome_sub: 'शुभ कृषिदिवसः,', hello_farmer: 'कृषक {userName}', new_scan: 'नवीनं स्कैन्', btn_capture: 'ग्रह', btn_upload: 'अपलो', crop_name_label: 'सस्यनाम', crop_placeholder: 'यथा आलुकम्', category_label: 'वर्गः', cat_veg: 'शाकम्', cat_fruit: 'फलम्', cat_grain: 'धान्यम्', cat_dairy: 'दुग्धशाला', pick_date_label: 'चयनदिनाङ्कः', temp_label: 'तापमानम् (°C)', analyze_btn: 'संरक्षणकालनिरूपणम्', nav_home: 'गृहम्', nav_videos: 'चलचित्राणि', menu_my_crops: 'मम सस्यानि', menu_language: 'भाषा', menu_support: 'साहाय्यम्', open_menu: 'सूची उद्घाटयतु', open_user_profile: 'रूपरेखा उद्घाटयतु', expires: 'समाप्तिः', analysis_complete: 'विश्लेषणं सम्पूर्णम्!', product_label: 'उत्पादः', quality_label: 'गुणवत्ता', tips_label: 'सूचनाः', processing_msg: 'प्रक्रिया प्रचलति...', label_location: 'स्थानम्', logout_btn: 'निर्गमनम्' },
+            'sd': { page_title: 'ڪرشڪا - ڪسان ڊيش بورڊ', dashboard_title: 'ڊيش بورڊ', welcome_sub: 'سٺو پوک جو ڏينهن،', hello_farmer: 'ڪسان {userName}', new_scan: 'نئون اسڪين', btn_capture: 'ڪيپچر', btn_upload: 'اپ لوڊ', crop_name_label: 'پوک جو نالو', crop_placeholder: 'مثال، آلو', category_label: 'زمرو', cat_veg: 'ڀاڄي', cat_fruit: 'ميوو', cat_grain: 'ان', cat_dairy: 'ڊيري', pick_date_label: 'چونڊڻ جي تاريخ', temp_label: 'گرمي پد (°C)', analyze_btn: 'شيلف زندگي جو تجزيو', nav_home: 'گهر', nav_videos: 'وڊيو', menu_my_crops: 'منهنجا فصل', menu_language: 'ٻولي', menu_support: 'مدد', open_menu: 'مينيو کوليو', open_user_profile: 'پروفائل کوليو', expires: 'مدو ختم', analysis_complete: 'تجزيو مڪمل!', product_label: 'پراڊڪٽ', quality_label: 'معيار', tips_label: 'صلاحون', processing_msg: 'پروسيسنگ...', label_location: 'مقام', logout_btn: 'لاگ آئوٽ' },
+            'doi': { page_title: 'कृषिका - किसान डैशबोर्ड', dashboard_title: 'डैशबोर्ड', welcome_sub: 'शुभ खेती दिन,', hello_farmer: 'किसान {userName}', new_scan: 'नया स्कैन', btn_capture: 'कैमरा', btn_upload: 'अपलोड', crop_name_label: 'फसल दा नां', crop_placeholder: 'जिचें, आलू', category_label: 'श्रेणी', cat_veg: 'सब्जी', cat_fruit: 'फल', cat_grain: 'अनाज', cat_dairy: 'डेयरी', pick_date_label: 'तोड़ने दी तारिख', temp_label: 'तापमान (°C)', analyze_btn: 'शेल्फ-लाइफ विश्लेषण', nav_home: 'घर', nav_videos: 'वीडियो', menu_my_crops: 'मेरी फसलां', menu_language: 'भाषा', menu_support: 'समर्थन', open_menu: 'मेन्यू खोलो', open_user_profile: 'प्रोफाइल खोलो', expires: 'म्याद', analysis_complete: 'विश्लेषण पूरा!', product_label: 'उत्पाद', quality_label: 'गुणवत्ता', tips_label: 'सुझाव', processing_msg: 'कम चल करदा...', label_location: 'स्थान', logout_btn: 'साइन आउट' },
+            'kok': { page_title: 'कृषिका - शेतकार डॅशबोर्ड', dashboard_title: 'डॅशबोर्ड', welcome_sub: 'बरो शेतकी दीस,', hello_farmer: 'शेतकार {userName}', new_scan: 'नवो स्कॅन', btn_capture: 'काढ', btn_upload: 'अपलोड', crop_name_label: 'पिकाचें नांव', crop_placeholder: 'उदा. बटाट', category_label: 'वर्ग', cat_veg: 'भाजी', cat_fruit: 'फळ', cat_grain: 'धान्य', cat_dairy: 'दुग्ध', pick_date_label: 'काडपाची तारीख', temp_label: 'तापमान (°C)', analyze_btn: 'तिकपाचें वेळ विश्लेशण', nav_home: 'घर', nav_videos: 'व्हिडिओ', menu_my_crops: 'म्हाजीं पिकां', menu_language: 'भास', menu_support: 'आदार', open_menu: 'मेनु उक्तें कर', open_user_profile: 'प्रोफाइल उक्तें कर', expires: 'सोंपता', analysis_complete: 'विश्लेशण जालें!', product_label: 'उत्पादन', quality_label: 'दर्जो', tips_label: 'सुचोवण्यो', processing_msg: 'प्रक्रिया चालू...', label_location: 'जागो', logout_btn: 'भायर सर' },
+            'brx': { page_title: 'कृषिका - आबादारी डेशबर्ड', dashboard_title: 'डेशबर्ड', welcome_sub: 'मोजां आबाद सान,', hello_farmer: 'आबादारी {userName}', new_scan: 'गोदान स्क एन', btn_capture: 'केपचार', btn_upload: 'आपलोड', crop_name_label: 'आबादनि मु', crop_placeholder: 'जेरै, आलु', category_label: 'थाखो', cat_veg: 'मैगं-तायगं', cat_fruit: 'फिथाय', cat_grain: 'माय-मै', cat_dairy: 'दै', pick_date_label: 'खांनाय अक्ट', temp_label: 'दुंग्थाइ (°C)', analyze_btn: 'बिजिरनाय', nav_home: 'न', nav_videos: 'भिडिअ', menu_my_crops: 'आंनि आबाद', menu_language: 'राव', menu_support: 'मदत', open_menu: 'मेनु खेव', open_user_profile: 'प्रफाइल खेव', expires: 'जोबनाय', analysis_complete: 'बिजिरनाय जोबबाय!', product_label: 'सामग्रि', quality_label: 'गुण', tips_label: 'सल्दाय', processing_msg: 'मावगासिनो...', label_location: 'जायगा', logout_btn: 'अंखार' },
+            'mai': { page_title: 'कृषिका - किसान डैशबोर्ड', dashboard_title: 'डैशबोर्ड', welcome_sub: 'शुभ कृषि दिवस,', hello_farmer: 'किसान {userName}', new_scan: 'नवा स्कैन', btn_capture: 'फोटो', btn_upload: 'अपलोड', crop_name_label: 'फसलक नाम', crop_placeholder: 'जहिना आलू', category_label: 'श्रेणी', cat_veg: 'तर्कारी', cat_fruit: 'फल', cat_grain: 'अनाज', cat_dairy: 'डेयरी', pick_date_label: 'तोड़बाक तारीख', temp_label: 'तापमान (°C)', analyze_btn: 'विश्लेषण', nav_home: 'घर', nav_videos: 'वीडियो', menu_my_crops: 'हमर फसल', menu_language: 'भाषा', menu_support: 'समर्थन', open_menu: 'मेनू खोलू', open_user_profile: 'प्रोफाइल खोलू', expires: 'खत्म', analysis_complete: 'विश्लेषण पूरा!', product_label: 'उत्पाद', quality_label: 'गुणवत्ता', tips_label: 'सुझाव', processing_msg: 'प्रक्रिया भ रहल अछि...', label_location: 'स्थान', logout_btn: 'निकलू' },
+            'sat': { page_title: 'ᱠᱨᱤᱥᱤᱠᱟ - ᱪᱟᱹᱥᱤ ᱰᱮᱥᱵᱚᱨᱰ', dashboard_title: 'ᱰᱮᱥᱵᱚᱨᱰ', welcome_sub: 'ᱡᱚᱦᱟᱨ ᱪᱟᱹᱥᱤ ᱢᱟᱦᱟᱸ,', hello_farmer: 'ᱪᱟᱹᱥᱤ {userName}', new_scan: 'ᱱᱟᱣᱟ ᱥᱠᱮᱱ', btn_capture: 'ᱛᱩᱞᱟᱹᱣ', btn_upload: 'ᱟᱯᱞᱚᱰ', crop_name_label: 'ᱪᱟᱥ ᱨᱮᱭᱟᱜ ᱧᱩᱛᱩᱢ', crop_placeholder: 'ᱡᱮᱞᱮᱠᱟ ᱟᱞᱩ', category_label: 'ᱛᱷᱚᱠ', cat_veg: 'ᱟᱲᱟᱜ ᱥᱟᱠᱟᱢ', cat_fruit: 'ᱡᱚ', cat_grain: 'ᱤᱨ', cat_dairy: 'ᱛᱚᱣᱟ', pick_date_label: 'ᱛᱩᱢᱟᱹᱞ ᱛᱟᱹᱨᱤᱠᱷ', temp_label: 'ᱞᱚᱞᱚᱥᱚᱝ (°C)', analyze_btn: 'ᱡᱟᱸᱪ', nav_home: 'ᱚᱲᱟᱜ', nav_videos: 'ᱵᱤᱰᱤᱭᱳ', menu_my_crops: 'ᱤᱧᱟᱜ ᱪᱟᱥ', menu_language: 'ᱯᱟᱹᱨᱥᱤ', menu_support: 'ᱜᱚᱲᱚ', open_menu: 'ᱢᱮᱱᱩ ᱡᱷᱤᱡ', open_user_profile: 'ᱯᱨᱚᱯᱷᱟᱭᱤᱞ ᱡᱷᱤᱡ', expires: 'ᱢᱩᱪᱟᱹᱫ', analysis_complete: 'ᱡᱟᱸᱪ ᱯᱩᱨᱟᱹᱣ!', product_label: 'ᱡᱤᱱᱤᱥ', quality_label: 'ᱜᱩᱱ', tips_label: 'ᱥᱚᱞᱦᱟ', processing_msg: 'ᱠᱟᱹᱢᱤ ᱪᱟᱞᱟᱜ ᱠᱟᱱᱟ...', label_location: 'ᱴᱷᱟᱶ', logout_btn: 'ᱚᱰᱚᱠ' },
+            'ks': { page_title: 'کرشکا - کاشتکار ڈیش بورڈ', dashboard_title: 'ڈیش بورڈ', welcome_sub: 'جانہٕ کاشتکاری دۄہ،', hello_farmer: 'کاشتکار {userName}', new_scan: 'نو سکین', btn_capture: 'فوٹو', btn_upload: 'اپ لوڈ', crop_name_label: 'فصلُک ناو', crop_placeholder: 'مثلاً اولو', category_label: 'زٲژ', cat_veg: 'سبزی', cat_fruit: 'میوہ', cat_grain: 'دانہٕ', cat_dairy: 'ڈیری', pick_date_label: 'تُلنُک تاریخ', temp_label: 'درجہ حرارت (°C)', analyze_btn: 'تجزیہ کریو', nav_home: 'گھر', nav_videos: 'ویڈیوز', menu_my_crops: 'میٲنی فصل', menu_language: 'زبان', menu_support: 'مدد', open_menu: 'مینو کَڈیو', open_user_profile: 'پروفائل کَڈیو', expires: 'ختم', analysis_complete: 'تجزیہ مکمل!', product_label: 'پیداوار', quality_label: 'معیار', tips_label: 'مشورہ', processing_msg: 'کام جاری...', label_location: 'جاۓ', logout_btn: 'لاگ آؤٹ' }
+        };
+
+        const customSelect = document.querySelector('.custom-select');
+        const selectTrigger = customSelect.querySelector('.custom-select-trigger');
+        const options = customSelect.querySelectorAll('.custom-option');
+        const triggerSpan = selectTrigger.querySelector('span');
+
+        const translatePage = (lang) => {
+            // Save language to localStorage and hidden input
+            localStorage.setItem('farmerLanguage', lang);
+            const hiddenInput = document.getElementById('selected-language-input');
+            if(hiddenInput) hiddenInput.value = lang;
+
+            const langTranslations = translations[lang] || translations['en'];
+
+            // 1. Update text based on data-translate-key
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.dataset.translateKey;
+                let translation = langTranslations[key] || translations['en'][key];
+                
+                // Dynamic replacement for {userName}
+                if(key === 'hello_farmer' && el.dataset.username){
+                    translation = translation.replace('{userName}', el.dataset.username);
+                }
+                
+                if(translation && el.innerHTML !== translation) {
+                     el.innerHTML = translation;
+                }
+            });
+
+            // 2. Update placeholders
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+                const key = el.dataset.translatePlaceholder;
+                const translation = langTranslations[key] || translations['en'][key];
+                if(translation) el.placeholder = translation;
+            });
+            
+            // 3. Update titles
+            document.querySelectorAll('[data-translate-title]').forEach(el => {
+                const key = el.dataset.translateTitle;
+                const translation = langTranslations[key] || translations['en'][key];
+                if(translation) el.title = translation;
+            });
+
+            // 4. Update aria-labels
+            document.querySelectorAll('[data-translate-aria-label]').forEach(el => {
+                const key = el.dataset.translateAriaLabel;
+                const translation = langTranslations[key] || translations['en'][key];
+                if(translation) el.setAttribute('aria-label', translation);
+            });
+
+            // 5. Update dropdown visual state
+            const currentOption = customSelect.querySelector(`.custom-option[data-value="${lang}"]`);
+            if (currentOption) {
+                triggerSpan.textContent = currentOption.textContent;
+                options.forEach(opt => opt.classList.remove('selected'));
+                currentOption.classList.add('selected');
+            }
+        };
+
+        // Custom Select Logic
+        selectTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            customSelect.classList.toggle('open');
+        });
+        
+        window.addEventListener('click', (e) => { 
+            if (!customSelect.contains(e.target)) customSelect.classList.remove('open'); 
+        });
+
+        options.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const selectedLang = option.getAttribute('data-value');
+                translatePage(selectedLang);
+                customSelect.classList.remove('open');
+            });
+        });
+
+        // Initialize on Load
+        const savedLang = localStorage.getItem('farmerLanguage') || 'en';
+        translatePage(savedLang);
+
+    </script>
+</body>
+</html>
