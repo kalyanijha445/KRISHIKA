@@ -21,7 +21,7 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
 # API Setup
 genai.configure(api_key="AIzaSyDhSagikZ_YKy_TCOELH33rdFpkaAIokMI") 
-model = genai.GenerativeModel('gemini-2.0-flash')
+model = genai.GenerativeModel('gemini-3-flash-preview')
 
 # Ensure folders exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
