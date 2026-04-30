@@ -20,7 +20,7 @@ app.config['PROFILE_FOLDER'] = 'static/profiles'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  
 
 # API Setup
-genai.configure(api_key="AIzaSyA21bnwuFxLGbVhSaKwo5OE9CF_FX-S3KU") 
+genai.configure(api_key="AIzaSyAIMehJ-0O4WWuo89wq0dOwQ0AdU5jOPHQ") 
 model = genai.GenerativeModel('gemini-3-flash-preview')
 
 # Ensure folders exist
